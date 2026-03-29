@@ -5,6 +5,7 @@ import { usePortfolio } from '../hooks/usePortfolio';
 import { useGuidance } from '../context/GuidanceContext';
 import XPBar from '../components/leveling/XPBar';
 import LevelRoadmap from '../components/leveling/LevelRoadmap';
+import { getChessPiece } from '../components/leveling/LevelBadge';
 import TourAnchor from '../components/guidance/TourAnchor';
 import { useEffect } from 'react';
 import type { XPEvent } from '../types';
@@ -117,25 +118,29 @@ export default function ProfilePage() {
           animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both',
         }}
       >
-        {/* Avatar */}
+        {/* Avatar — chess piece for level */}
         <div
           style={{
             width: '64px',
             height: '64px',
             borderRadius: '50%',
-            background: `linear-gradient(135deg, ${levelColor}44, ${levelColor}22)`,
+            background: `linear-gradient(135deg, ${levelColor}44, ${levelColor}18)`,
             border: `2px solid ${levelColor}`,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: levelColor,
             flexShrink: 0,
-            boxShadow: `0 0 20px ${levelColor}40`,
+            boxShadow: `0 0 24px ${levelColor}50`,
+            gap: '1px',
           }}
         >
-          {user.displayName?.charAt(0)?.toUpperCase() || '?'}
+          <span style={{ fontSize: '1.75rem', lineHeight: 1, color: levelColor }}>
+            {getChessPiece(level)}
+          </span>
+          <span style={{ fontSize: '0.58rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: levelColor, opacity: 0.7 }}>
+            LVL {level}
+          </span>
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>

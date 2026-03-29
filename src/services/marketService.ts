@@ -188,6 +188,49 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
   }
 }
 
+// ─── Stock Metrics ────────────────────────────────
+
+export interface StockMetrics {
+  peRatio: number | null;
+  beta: number | null;
+  high52w: number | null;
+  low52w: number | null;
+  avgVolume10d: number | null;
+  eps: number | null;
+  dividendYield: number | null;
+  returnYTD: number | null;
+}
+
+export async function getStockMetrics(ticker: string): Promise<StockMetrics> {
+  try {
+    const data = await finnhubFetch<{
+      metric: {
+        peBasicExclExtraTTM?: number;
+        beta?: number;
+        '52WeekHigh'?: number;
+        '52WeekLow'?: number;
+        '10DayAverageTradingVolume'?: number;
+        epsBasicExclExtraItemsTTM?: number;
+        dividendYieldIndicatedAnnual?: number;
+        yearToDatePriceReturnDaily?: number;
+      };
+    }>(`/stock/metric?symbol=${encodeURIComponent(ticker)}&metric=all`);
+    const m = data.metric || {};
+    return {
+      peRatio: m.peBasicExclExtraTTM ?? null,
+      beta: m.beta ?? null,
+      high52w: m['52WeekHigh'] ?? null,
+      low52w: m['52WeekLow'] ?? null,
+      avgVolume10d: m['10DayAverageTradingVolume'] ?? null,
+      eps: m.epsBasicExclExtraItemsTTM ?? null,
+      dividendYield: m.dividendYieldIndicatedAnnual ?? null,
+      returnYTD: m.yearToDatePriceReturnDaily ?? null,
+    };
+  } catch {
+    return { peRatio: null, beta: null, high52w: null, low52w: null, avgVolume10d: null, eps: null, dividendYield: null, returnYTD: null };
+  }
+}
+
 export async function getMarketNews(): Promise<NewsEvent[]> {
   const data = await finnhubFetch<Array<{
     id: number;

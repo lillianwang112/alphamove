@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   signInWithPopup,
+  signInAnonymously,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   type User as FirebaseUser,
@@ -24,7 +25,7 @@ export function useAuth() {
           // Create new user record
           userData = {
             uid: fbUser.uid,
-            displayName: fbUser.displayName || 'Investor',
+            displayName: fbUser.displayName || (fbUser.isAnonymous ? 'Guest' : 'Investor'),
             email: fbUser.email || '',
             createdAt: Timestamp.now(),
             onboardingComplete: false,
@@ -58,6 +59,15 @@ export function useAuth() {
     }
   };
 
+  const signInAsGuest = async () => {
+    try {
+      await signInAnonymously(auth);
+    } catch (err) {
+      console.error('signInAsGuest error:', err);
+      throw err;
+    }
+  };
+
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
@@ -81,7 +91,9 @@ export function useAuth() {
     firebaseUser,
     loading,
     signIn,
+    signInAsGuest,
     signOut,
     updateUser,
+    isGuest: firebaseUser?.isAnonymous ?? false,
   };
 }

@@ -1,9 +1,19 @@
 interface LevelBadgeProps {
   level: number;
   size?: 'sm' | 'md' | 'lg';
+  showNumber?: boolean;
 }
 
-function getLevelColor(level: number): string {
+export function getChessPiece(level: number): string {
+  if (level <= 2) return '♟';  // Pawn
+  if (level <= 4) return '♞';  // Knight
+  if (level <= 6) return '♝';  // Bishop
+  if (level <= 8) return '♜';  // Rook
+  if (level === 9) return '♛'; // Queen
+  return '♚';                  // King
+}
+
+export function getLevelColor(level: number): string {
   if (level <= 2) return '#64748B';
   if (level <= 5) return '#6366F1';
   if (level <= 8) return '#F59E0B';
@@ -11,14 +21,15 @@ function getLevelColor(level: number): string {
 }
 
 const SIZES = {
-  sm: { outer: 28, inner: 22, fontSize: '0.7rem', borderWidth: 2 },
-  md: { outer: 40, inner: 32, fontSize: '0.875rem', borderWidth: 2 },
-  lg: { outer: 60, inner: 48, fontSize: '1.125rem', borderWidth: 3 },
+  sm: { outer: 28, pieceSize: '0.85rem', numSize: '0.6rem', borderWidth: 2 },
+  md: { outer: 40, pieceSize: '1.15rem', numSize: '0.72rem', borderWidth: 2 },
+  lg: { outer: 60, pieceSize: '1.6rem',  numSize: '0.9rem',  borderWidth: 3 },
 };
 
-export default function LevelBadge({ level, size = 'md' }: LevelBadgeProps) {
+export default function LevelBadge({ level, size = 'md', showNumber = false }: LevelBadgeProps) {
   const color = getLevelColor(level);
   const dims = SIZES[size];
+  const piece = getChessPiece(level);
 
   return (
     <div
@@ -26,20 +37,31 @@ export default function LevelBadge({ level, size = 'md' }: LevelBadgeProps) {
         width: `${dims.outer}px`,
         height: `${dims.outer}px`,
         borderRadius: '50%',
-        background: `${color}20`,
+        background: `${color}22`,
         border: `${dims.borderWidth}px solid ${color}`,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: dims.fontSize,
-        fontWeight: 700,
-        color: color,
-        fontFamily: 'var(--font-mono)',
         flexShrink: 0,
         boxShadow: `0 0 12px ${color}40`,
+        position: 'relative',
+        gap: '0',
       }}
     >
-      {level}
+      <span style={{ fontSize: dims.pieceSize, lineHeight: 1, color }}>{piece}</span>
+      {showNumber && (
+        <span style={{
+          fontSize: dims.numSize,
+          fontWeight: 700,
+          color,
+          fontFamily: 'var(--font-mono)',
+          lineHeight: 1,
+          marginTop: '1px',
+        }}>
+          {level}
+        </span>
+      )}
     </div>
   );
 }

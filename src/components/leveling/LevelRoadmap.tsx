@@ -16,12 +16,9 @@ const LEVELS = [
   { level: 10, name: 'Graduation', xpRequired: 12000, mentorBehavior: 'Autonomous', unlocks: '"Ready for real brokerage" badge' },
 ];
 
-function getLevelColor(level: number): string {
-  if (level <= 2) return '#64748B';
-  if (level <= 5) return '#6366F1';
-  if (level <= 8) return '#F59E0B';
-  return '#26C2A3';
-}
+import { getChessPiece, getLevelColor } from './LevelBadge';
+
+export { getLevelColor };
 
 function getMentorBehaviorColor(behavior: string): string {
   switch (behavior) {
@@ -70,7 +67,7 @@ export default function LevelRoadmap({ currentLevel, currentXP }: LevelRoadmapPr
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.75rem',
+                  fontSize: isCompleted ? '0.7rem' : '1rem',
                   fontWeight: 700,
                   color: isCompleted ? 'white' : isLocked ? 'var(--text-muted)' : color,
                   fontFamily: 'var(--font-mono)',
@@ -80,7 +77,7 @@ export default function LevelRoadmap({ currentLevel, currentXP }: LevelRoadmapPr
                   transition: 'all 0.3s ease',
                 }}
               >
-                {isCompleted ? '✓' : lvl.level}
+                {isCompleted ? '✓' : getChessPiece(lvl.level)}
               </div>
 
               {/* Line */}

@@ -1,9 +1,10 @@
 interface WelcomeScreenProps {
   onSignIn: () => void;
+  onGuestSignIn: () => void;
   loading: boolean;
 }
 
-export default function WelcomeScreen({ onSignIn, loading }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onSignIn, onGuestSignIn, loading }: WelcomeScreenProps) {
   return (
     <div
       style={{
@@ -197,19 +198,40 @@ export default function WelcomeScreen({ onSignIn, loading }: WelcomeScreenProps)
           )}
         </button>
 
+        {/* Guest sign-in */}
+        <button
+          onClick={onGuestSignIn}
+          disabled={loading}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-muted)',
+            fontSize: '0.88rem',
+            cursor: 'pointer',
+            marginTop: '16px',
+            padding: '8px',
+            textDecoration: 'underline',
+            textDecorationColor: 'rgba(148,163,184,0.35)',
+            textUnderlineOffset: '3px',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          Continue as Guest →
+        </button>
+
         {/* Disclaimer */}
         <p
           style={{
-            fontSize: '0.75rem',
+            fontSize: '0.72rem',
             color: 'var(--text-muted)',
             textAlign: 'center',
-            marginTop: '20px',
+            marginTop: '14px',
             lineHeight: 1.5,
           }}
         >
-          Paper trading only. No real money involved.
+          Paper trading only · No real money · Educational use
           <br />
-          For educational purposes.
+          Guest progress is saved to this device.
         </p>
       </div>
     </div>

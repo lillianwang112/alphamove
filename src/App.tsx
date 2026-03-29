@@ -129,7 +129,7 @@ function LoadingScreen() {
 }
 
 function AuthGate() {
-  const { user, loading, signIn, updateUser } = useAuth();
+  const { user, loading, signIn, signInAsGuest, updateUser, isGuest } = useAuth();
   const [wizardDone, setWizardDone] = useState(false);
 
   if (loading) {
@@ -139,7 +139,7 @@ function AuthGate() {
   if (!user) {
     return (
       <div className="app-container">
-        <WelcomeScreen onSignIn={signIn} loading={loading} />
+        <WelcomeScreen onSignIn={signIn} onGuestSignIn={signInAsGuest} loading={loading} />
       </div>
     );
   }
@@ -177,7 +177,7 @@ function AuthGate() {
 
   return (
     <div className="app-container">
-      <AppShell user={user}>
+      <AppShell user={user} isGuest={isGuest} onSignIn={signIn}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />

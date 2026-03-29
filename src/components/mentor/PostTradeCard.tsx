@@ -10,19 +10,36 @@ interface PostTradeCardProps {
   xpEarned: number;
   xpReason: string;
   betterMove: string | null;
+  ticker?: string;
+  action?: string;
   onDone: () => void;
 }
 
+const RATING_EMOJI: Record<MoveRating, string> = {
+  brilliant: '✦✦ Brilliant', great: '✦ Great', good: '◆ Good',
+  inaccuracy: '⚠ Inaccuracy', mistake: '✖ Mistake', blunder: '?? Blunder',
+};
+
 export default function PostTradeCard({
-  analysis,
-  moveRating,
-  xpEarned,
-  xpReason,
-  betterMove,
-  onDone,
+  analysis, moveRating, xpEarned, xpReason, betterMove, ticker, action, onDone,
 }: PostTradeCardProps) {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const isPositiveRating = moveRating === 'brilliant' || moveRating === 'great' || moveRating === 'good';
+
+  const handleShare = () => {
+    const text = [
+      '♟ AlphaMove Move Review',
+      ticker && action ? `${ticker} · ${action.charAt(0).toUpperCase() + action.slice(1)} · +${xpEarned} XP` : `+${xpEarned} XP`,
+      `Rating: ${RATING_EMOJI[moveRating]}`,
+      `"${analysis}"`,
+      '#AlphaMove',
+    ].join('\n');
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   return (
     <div
@@ -174,8 +191,15 @@ export default function PostTradeCard({
         </div>
       </div>
 
-      {/* Done button */}
-      <div style={{ padding: '16px 20px' }}>
+      {/* Share + Done */}
+      <div style={{ padding: '16px 20px', display: 'flex', gap: '10px' }}>
+        <button
+          onClick={handleShare}
+          className="btn btn-ghost"
+          style={{ fontSize: '0.85rem', height: '52px', flexShrink: 0, color: copied ? 'var(--success)' : 'var(--text-muted)' }}
+        >
+          {copied ? '✓ Copied' : '↗ Share'}
+        </button>
         <button
           onClick={onDone}
           className="btn btn-primary btn-full"

@@ -53,7 +53,7 @@ export default function HomePage() {
           {greeting},
         </p>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0' }}>
-          {firstName} 👋
+          {firstName}
         </h1>
         {beginnerMode && (
           <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '34ch' }}>
@@ -61,6 +61,69 @@ export default function HomePage() {
           </p>
         )}
       </div>
+
+      {/* ── Decision Feed: Position Signals ── */}
+      {!portfolioLoading && portfolio && portfolio.positions.length > 0 && (() => {
+        const sorted = [...portfolio.positions].sort((a, b) => Math.abs(b.totalReturnPct) - Math.abs(a.totalReturnPct));
+        const topMover = sorted[0];
+        const atRisk = portfolio.positions.filter((p) => p.totalReturnPct < -0.05);
+        const bigWinner = portfolio.positions.find((p) => p.totalReturnPct > 0.1);
+        const concentrationPct = topMover ? (topMover.marketValue / portfolio.totalValue) * 100 : 0;
+        const signals: { icon: string; label: string; value: string; color: string; sub?: string }[] = [];
+
+        if (atRisk.length > 0) {
+          signals.push({
+            icon: '⚠',
+            label: atRisk.length === 1 ? `${atRisk[0].ticker} down` : `${atRisk.length} positions at risk`,
+            value: atRisk.length === 1 ? `${(atRisk[0].totalReturnPct * 100).toFixed(1)}%` : `worst: ${(atRisk[0].totalReturnPct * 100).toFixed(1)}%`,
+            color: 'var(--danger)',
+            sub: 'Review your thesis',
+          });
+        }
+        if (bigWinner) {
+          signals.push({
+            icon: '↗',
+            label: `${bigWinner.ticker} running`,
+            value: `+${(bigWinner.totalReturnPct * 100).toFixed(1)}%`,
+            color: 'var(--success)',
+            sub: 'Consider your exit plan',
+          });
+        }
+        if (concentrationPct > 45) {
+          signals.push({
+            icon: '◈',
+            label: 'Concentration risk',
+            value: `${topMover.ticker} = ${concentrationPct.toFixed(0)}% of portfolio`,
+            color: '#F59E0B',
+            sub: 'High concentration, consider sizing down',
+          });
+        }
+
+        if (signals.length === 0) return null;
+
+        return (
+          <div style={{ animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both', animationDelay: '0.01s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#EF4444', display: 'inline-block', boxShadow: '0 0 6px #EF4444' }} />
+              <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Signals</p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {signals.map((sig, i) => (
+                <div key={i} style={{ background: 'var(--surface)', border: `1px solid ${sig.color}25`, borderLeft: `3px solid ${sig.color}`, borderRadius: 'var(--radius-md)', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ color: sig.color, fontSize: '0.9rem', flexShrink: 0 }}>{sig.icon}</span>
+                    <div>
+                      <p style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{sig.label}</p>
+                      {sig.sub && <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, marginTop: '1px' }}>{sig.sub}</p>}
+                    </div>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', fontWeight: 700, color: sig.color, flexShrink: 0 }}>{sig.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <TourAnchor id="home-start">
         <div

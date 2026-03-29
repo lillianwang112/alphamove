@@ -4,6 +4,7 @@ import type { User } from '../../types';
 import { useGuidance } from '../../context/GuidanceContext';
 import GuidedTour from '../guidance/GuidedTour';
 import FloatingAlpha from '../mentor/FloatingAlpha';
+import { getChessPiece, getLevelColor as getColor } from '../leveling/LevelBadge';
 
 interface AppShellProps {
   children: ReactNode;
@@ -12,28 +13,23 @@ interface AppShellProps {
 
 function getLevelName(level: number): string {
   const names: Record<number, string> = {
-    1: 'Paper Rookie',
-    2: 'Market Observer',
-    3: 'Thesis Builder',
-    4: 'Risk Aware',
-    5: 'Pattern Spotter',
-    6: 'Independent Thinker',
-    7: 'Portfolio Strategist',
-    8: 'Market Analyst',
-    9: 'Alpha Seeker',
-    10: 'Graduated',
+    1: 'Paper Rookie', 2: 'Market Observer', 3: 'Thesis Builder',
+    4: 'Risk Aware', 5: 'Pattern Spotter', 6: 'Independent Thinker',
+    7: 'Portfolio Strategist', 8: 'Market Analyst', 9: 'Alpha Seeker', 10: 'Graduated',
   };
   return names[level] || 'Paper Rookie';
 }
 
 function getLevelColor(level: number): string {
-  if (level <= 2) return '#64748B';
-  if (level <= 5) return '#6366F1';
-  if (level <= 8) return '#F59E0B';
-  return '#26C2A3';
+  return getColor(level);
 }
 
-export default function AppShell({ children, user }: AppShellProps) {
+interface AppShellPropsExtended extends AppShellProps {
+  isGuest?: boolean;
+  onSignIn?: () => void;
+}
+
+export default function AppShell({ children, user, isGuest, onSignIn }: AppShellPropsExtended) {
   const { startTour, maybeStartTour, hasSeenTour, tradeMode, setTradeMode } = useGuidance();
   const level = user?.level ?? 1;
   const xp = user?.xp ?? 0;
@@ -196,7 +192,7 @@ export default function AppShell({ children, user }: AppShellProps) {
               </div>
             </div>
 
-            {/* Level badge */}
+            {/* Level badge — chess piece */}
             <div
               style={{
                 width: '32px',
@@ -207,18 +203,48 @@ export default function AppShell({ children, user }: AppShellProps) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.8rem',
-                fontWeight: 700,
+                fontSize: '1rem',
                 color: getLevelColor(level),
                 flexShrink: 0,
+                boxShadow: `0 0 8px ${getLevelColor(level)}40`,
               }}
-              title={getLevelName(level)}
+              title={`${getLevelName(level)} (Level ${level})`}
             >
-              {level}
+              {getChessPiece(level)}
             </div>
           </div>
         )}
       </header>
+
+      {/* Guest banner */}
+      {isGuest && onSignIn && (
+        <div style={{
+          position: 'fixed',
+          top: 'var(--header-height)',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: 'var(--app-max-width)',
+          background: 'rgba(99,102,241,0.12)',
+          borderBottom: '1px solid rgba(99,102,241,0.25)',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px',
+          zIndex: 98,
+        }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>
+            Guest mode · progress saved locally
+          </p>
+          <button
+            onClick={onSignIn}
+            style={{ background: 'var(--accent)', border: 'none', borderRadius: '999px', color: 'white', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', padding: '5px 12px', flexShrink: 0 }}
+          >
+            Sign in to save
+          </button>
+        </div>
+      )}
 
       {/* Main scrollable content */}
       <main
@@ -226,7 +252,7 @@ export default function AppShell({ children, user }: AppShellProps) {
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
-          paddingTop: 'var(--header-height)',
+          paddingTop: isGuest ? 'calc(var(--header-height) + 37px)' : 'var(--header-height)',
           paddingBottom: 'var(--bottom-nav-height)',
           WebkitOverflowScrolling: 'touch',
         }}
