@@ -10,6 +10,7 @@ interface TradeFormProps {
   availableCash: number;
   maxShares?: number;
   userLevel?: number;
+  simulationMode?: boolean;
   onSubmit: (shares: number, orderType: OrderType, limitPrice?: number, timeInForce?: TimeInForce, trailingPct?: number) => void;
   onBack?: () => void;
 }
@@ -107,6 +108,7 @@ export default function TradeForm({
   availableCash,
   maxShares,
   userLevel = 1,
+  simulationMode = false,
   onSubmit,
   onBack,
 }: TradeFormProps) {
@@ -421,12 +423,15 @@ export default function TradeForm({
 
         {/* ── SHARES INPUT ── */}
         <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '10px' }}>Shares</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
+            <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>Shares</label>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Decimals OK — e.g. 0.5 shares</span>
+          </div>
           <input
             type="number"
             value={shares}
             onChange={(e) => { const v = e.target.value; if (v === '' || /^\d*\.?\d*$/.test(v)) { setShares(v); setError(''); } }}
-            min="0.0001" step="1"
+            min="0.0001" step="0.01"
             className="input"
             style={{ fontSize: '1.5rem', fontFamily: 'var(--font-mono)', fontWeight: 600, height: '60px', textAlign: 'center', borderColor: (isOverBudget || isOverHolding) ? 'var(--danger)' : undefined }}
             placeholder="0"
@@ -441,6 +446,18 @@ export default function TradeForm({
             </div>
           )}
           {error && <p style={{ color: 'var(--danger)', fontSize: '0.78rem', marginTop: '8px' }}>⚠ {error}</p>}
+          {isOverBudget && (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '6px', lineHeight: 1.5 }}>
+              Try decreasing shares or use a decimal — e.g.{' '}
+              <button
+                onClick={() => { setShares((availableCash / effectivePrice).toFixed(4)); setError(''); }}
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+              >
+                {(availableCash / effectivePrice).toFixed(4)} shares
+              </button>
+              {' '}(uses all cash)
+            </p>
+          )}
         </div>
 
         {/* ── TOTAL ── */}
@@ -475,7 +492,7 @@ export default function TradeForm({
         >
           {isInvalid && numShares > 0
             ? isBuy ? `Exceeds budget by $${(totalCost - availableCash).toFixed(2)}` : 'Invalid amount'
-            : 'Continue to Mentor Review'}
+            : simulationMode ? 'Review & Confirm' : 'Continue to Mentor Review'}
         </button>
       </div>
     </div>

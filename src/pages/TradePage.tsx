@@ -899,6 +899,7 @@ export default function TradePage() {
           availableCash={availableCash}
           maxShares={action === 'sell' ? currentPosition?.shares : undefined}
           userLevel={user?.level ?? 1}
+          simulationMode={tradeMode === 'simulation'}
           onSubmit={handleSharesSubmit}
           onBack={() => setStep('preview')}
         />
