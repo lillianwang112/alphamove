@@ -66,3 +66,31 @@ export async function getCryptoQuote(ticker: string): Promise<CryptoQuoteResult>
     volume24h: coinData.usd_24h_vol,
   };
 }
+
+// ─── Candle Data ──────────────────────────────────
+
+export interface CryptoCandleResult {
+  closes: number[];
+  timestamps: number[];
+}
+
+export async function getCryptoCandles(ticker: string, days = 30): Promise<CryptoCandleResult> {
+  const entry = COIN_MAP[ticker.toUpperCase()];
+  if (!entry) return { closes: [], timestamps: [] };
+
+  try {
+    const url = `https://api.coingecko.com/api/v3/coins/${entry.id}/market_chart?vs_currency=usd&days=${days}&interval=daily`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) return { closes: [], timestamps: [] };
+
+    const data = await res.json() as { prices: [number, number][] };
+    if (!data.prices?.length) return { closes: [], timestamps: [] };
+
+    return {
+      closes: data.prices.map(([, price]) => price),
+      timestamps: data.prices.map(([ts]) => Math.floor(ts / 1000)),
+    };
+  } catch {
+    return { closes: [], timestamps: [] };
+  }
+}

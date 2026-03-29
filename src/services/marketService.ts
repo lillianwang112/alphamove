@@ -27,6 +27,9 @@ export interface CompanyProfileResult {
   industry: string;
   marketCap: number;
   weburl: string;
+  description?: string;
+  exchange?: string;
+  ipo?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────
@@ -100,6 +103,9 @@ export async function getCompanyProfile(ticker: string): Promise<CompanyProfileR
     finnhubIndustry: string;
     marketCapitalization: number;
     weburl: string;
+    description?: string;
+    exchange?: string;
+    ipo?: string;
   }>(`/stock/profile2?symbol=${encodeURIComponent(ticker)}`);
 
   return {
@@ -109,6 +115,9 @@ export async function getCompanyProfile(ticker: string): Promise<CompanyProfileR
     industry: data.finnhubIndustry || 'Unknown',
     marketCap: data.marketCapitalization || 0,
     weburl: data.weburl || '',
+    description: data.description || '',
+    exchange: data.exchange || '',
+    ipo: data.ipo || '',
   };
 }
 
@@ -140,6 +149,43 @@ export async function getCompanyNews(ticker: string, daysBack = 7): Promise<News
     mentorAnalysis: '',         // filled by AI
     impactOnPortfolio: '',      // filled by AI
   }));
+}
+
+// ─── Candle Data ──────────────────────────────────
+
+export interface CandleResult {
+  closes: number[];
+  timestamps: number[];
+  highs: number[];
+  lows: number[];
+}
+
+export async function getStockCandles(ticker: string, days = 30): Promise<CandleResult> {
+  const to = Math.floor(Date.now() / 1000);
+  const from = to - days * 24 * 60 * 60;
+
+  try {
+    const data = await finnhubFetch<{
+      c: number[];
+      h: number[];
+      l: number[];
+      t: number[];
+      s: string;
+    }>(`/stock/candle?symbol=${encodeURIComponent(ticker)}&resolution=D&from=${from}&to=${to}`);
+
+    if (data.s !== 'ok' || !Array.isArray(data.c) || data.c.length === 0) {
+      return { closes: [], timestamps: [], highs: [], lows: [] };
+    }
+
+    return {
+      closes: data.c,
+      timestamps: data.t,
+      highs: data.h,
+      lows: data.l,
+    };
+  } catch {
+    return { closes: [], timestamps: [], highs: [], lows: [] };
+  }
 }
 
 export async function getMarketNews(): Promise<NewsEvent[]> {

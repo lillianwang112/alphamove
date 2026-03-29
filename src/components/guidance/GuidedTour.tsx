@@ -25,9 +25,7 @@ export default function GuidedTour() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-end',
-        background: 'rgba(6, 8, 14, 0.6)',
-        backdropFilter: 'blur(2px)',
-        WebkitBackdropFilter: 'blur(2px)',
+        background: 'rgba(6, 8, 14, 0.45)',
       }}
       onClick={skipTour}
     >

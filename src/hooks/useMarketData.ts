@@ -5,9 +5,11 @@ import {
   searchTicker,
   getCompanyProfile,
   getCompanyNews,
+  getStockCandles,
   type QuoteResult,
   type TickerSearchResult,
   type CompanyProfileResult,
+  type CandleResult,
 } from '../services/marketService';
 
 export function useMarketData() {
@@ -36,10 +38,18 @@ export function useMarketData() {
     []
   );
 
+  const fetchStockCandles = useCallback(
+    async (ticker: string, days = 30): Promise<CandleResult> => {
+      return getStockCandles(ticker, days);
+    },
+    []
+  );
+
   return {
     getQuote: fetchQuote,
     searchTicker: fetchSearchTicker,
     getCompanyProfile: fetchCompanyProfile,
     getCompanyNews: fetchCompanyNews,
+    getStockCandles: fetchStockCandles,
   };
 }

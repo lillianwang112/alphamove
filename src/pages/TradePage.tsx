@@ -8,7 +8,7 @@ import { useXP } from '../hooks/useXP';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { useGuidance } from '../context/GuidanceContext';
 import TickerSearch from '../components/trade/TickerSearch';
-import StockPreview from '../components/trade/StockPreview';
+import StockDetail from '../components/trade/StockDetail';
 import TradeForm from '../components/trade/TradeForm';
 import MentorChat from '../components/mentor/MentorChat';
 import TradeConfirmation from '../components/trade/TradeConfirmation';
@@ -800,11 +800,12 @@ export default function TradePage() {
 
       {/* Preview step — normal stock/etf/crypto */}
       {step === 'preview' && quote && assetClass !== 'option' && (
-        <StockPreview
+        <StockDetail
           ticker={ticker}
           companyName={companyName || profile?.name || ticker}
           quote={quote}
           profile={profile}
+          assetClass={assetClass}
           onBuy={handleBuy}
           onSell={handleSell}
         />

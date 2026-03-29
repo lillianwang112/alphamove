@@ -3,6 +3,7 @@ import BottomNav from './BottomNav';
 import type { User } from '../../types';
 import { useGuidance } from '../../context/GuidanceContext';
 import GuidedTour from '../guidance/GuidedTour';
+import FloatingAlpha from '../mentor/FloatingAlpha';
 
 interface AppShellProps {
   children: ReactNode;
@@ -236,6 +237,7 @@ export default function AppShell({ children, user }: AppShellProps) {
       {/* Bottom navigation */}
       <BottomNav />
       <GuidedTour />
+      <FloatingAlpha user={user} />
     </div>
   );
 }
