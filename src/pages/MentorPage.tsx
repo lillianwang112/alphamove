@@ -9,25 +9,27 @@ import LearnSheet from '../components/guidance/LearnSheet';
 import type { MentorMessage, MentorConversation } from '../types';
 import { Timestamp } from 'firebase/firestore';
 
+// Module-level cache — survives tab switches, resets on full page reload
+let _cachedConversation: MentorConversation | null = null;
+let _cachedMessages: MentorMessage[] = [];
+
 export default function MentorPage() {
   const location = useLocation();
   const { user } = useAuth();
   const { beginnerMode } = useGuidance();
   const { startGeneralChat, sendMessage } = useMentor();
-  const [conversation, setConversation] = useState<MentorConversation | null>(null);
-  const [messages, setMessages] = useState<MentorMessage[]>([]);
+  const [conversation, setConversation] = useState<MentorConversation | null>(_cachedConversation);
+  const [messages, setMessages] = useState<MentorMessage[]>(_cachedMessages);
   const [loading, setLoading] = useState(false);
   const [learnOpen, setLearnOpen] = useState(false);
 
   const suggestedPrompt = (location.state as { suggestedPrompt?: string } | null)?.suggestedPrompt ?? null;
 
-  // Start a general conversation on mount
+  // Start a general conversation only if one doesn't already exist
   const initConversation = useCallback(() => {
-    if (!user) return;
+    if (!user || _cachedConversation) return;
 
     const conv = startGeneralChat(user.uid);
-    setConversation(conv);
-
     const welcomeMsg: MentorMessage = {
       id: 'welcome',
       role: 'mentor',
@@ -35,6 +37,9 @@ export default function MentorPage() {
       mode: 'general',
       timestamp: Timestamp.now(),
     };
+    _cachedConversation = conv;
+    _cachedMessages = [welcomeMsg];
+    setConversation(conv);
     setMessages([welcomeMsg]);
   }, [startGeneralChat, user]);
 
@@ -54,7 +59,11 @@ export default function MentorPage() {
       mode: 'general',
       timestamp: Timestamp.now(),
     };
-    setMessages((prev) => [...prev, optimisticUserMsg]);
+    setMessages((prev) => {
+      const next = [...prev, optimisticUserMsg];
+      _cachedMessages = next;
+      return next;
+    });
 
     try {
       const response = await sendMessage({
@@ -65,7 +74,11 @@ export default function MentorPage() {
         portfolioValue: user.currentCash ?? 0,
         positions: [],
       });
-      setMessages((prev) => [...prev, response]);
+      setMessages((prev) => {
+        const next = [...prev, response];
+        _cachedMessages = next;
+        return next;
+      });
     } catch {
       const errorMsg: MentorMessage = {
         id: `error-${Date.now()}`,
@@ -74,16 +87,23 @@ export default function MentorPage() {
         mode: 'general',
         timestamp: Timestamp.now(),
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => {
+        const next = [...prev, errorMsg];
+        _cachedMessages = next;
+        return next;
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleNewChat = () => {
+    _cachedConversation = null;
+    _cachedMessages = [];
     setMessages([]);
     setConversation(null);
-    initConversation();
+    // Let useEffect re-init on next render
+    setTimeout(() => initConversation(), 0);
   };
 
   return (
