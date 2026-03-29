@@ -22,10 +22,15 @@ export default function MentorChat({
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const prevCountRef = useRef(messages.length);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom only when a new message is added, not on initial mount
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const prev = prevCountRef.current;
+    prevCountRef.current = messages.length;
+    if (messages.length > prev || loading) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, loading]);
 
   const handleSend = () => {
