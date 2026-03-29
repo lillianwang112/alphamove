@@ -850,7 +850,7 @@ export default function TradePage() {
                   key={starter.title}
                   onClick={starter.action}
                   style={{
-                    background: 'linear-gradient(135deg, rgba(28, 28, 46, 1) 0%, rgba(20, 20, 31, 1) 100%)',
+                    background: 'var(--surface-elevated)',
                     border: '1px solid var(--border)',
                     borderRadius: '16px',
                     padding: '14px 16px',
