@@ -31,6 +31,13 @@ export interface Position {
   totalReturn: number;          // marketValue - (shares * avgCostBasis)
   totalReturnPct: number;       // as decimal, e.g. 0.05 = 5%
   openedAt: Timestamp;
+  assetClass?: AssetClass;
+  // Options-specific
+  optionType?: OptionType;
+  strikePrice?: number;
+  expirationDays?: number;
+  expirationLabel?: string;
+  underlyingPrice?: number;     // spot price when option was bought
 }
 
 export interface Portfolio {
@@ -51,6 +58,7 @@ export type TradeStatus = 'pending_mentor' | 'confirmed' | 'executed' | 'cancell
 export interface Trade {
   id: string;
   uid: string;
+  assetClass?: AssetClass;
   ticker: string;
   companyName: string;
   action: TradeAction;
@@ -151,3 +159,24 @@ export type XPSource =
   | 'first_trade'         // one-time bonus
   | 'diversification'     // bought a stock in a new sector
   | 'loss_recovery';      // handled a loss well (didn't panic sell)
+
+// ─── Asset Classes ────────────────────────────────
+
+export type AssetClass = 'stock' | 'etf' | 'crypto' | 'option';
+
+export type OptionType = 'call' | 'put';
+
+export interface OptionContract {
+  underlying: string;        // e.g. "AAPL"
+  underlyingName: string;
+  optionType: OptionType;
+  strikePrice: number;
+  expirationDays: number;    // 7, 30, or 90
+  expirationLabel: string;   // "1 Week", "1 Month", "3 Months"
+  premium: number;           // price per share (1 contract = 100 shares)
+  contracts: number;         // number of contracts
+  underlyingPrice: number;   // spot price when purchased
+}
+
+// ─── Trade Mode ───────────────────────────────────
+export type TradeMode = 'learning' | 'simulation';

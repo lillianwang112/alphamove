@@ -10,9 +10,11 @@ import {
 } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { TOUR_STEPS } from './tourSteps';
+import type { TradeMode } from '../types';
 
 const BEGINNER_MODE_KEY = 'alphamove.beginnerMode';
 const TOUR_SEEN_KEY = 'alphamove.tourSeen';
+const TRADE_MODE_KEY = 'alphamove.tradeMode';
 
 export interface TourStep {
   route: string;
@@ -36,6 +38,8 @@ interface GuidanceContextValue {
   previousStep: () => void;
   skipTour: () => void;
   activeTourTarget: string | null;
+  tradeMode: TradeMode;
+  setTradeMode: (mode: TradeMode) => void;
 }
 
 const GuidanceContext = createContext<GuidanceContextValue | null>(null);
@@ -58,6 +62,10 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
   );
   const [tourOpen, setTourOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
+  const [tradeMode, setTradeModeState] = useState<TradeMode>(() => {
+    if (typeof window === 'undefined') return 'learning';
+    return (window.localStorage.getItem(TRADE_MODE_KEY) as TradeMode) ?? 'learning';
+  });
 
   useEffect(() => {
     window.localStorage.setItem(BEGINNER_MODE_KEY, String(beginnerMode));
@@ -66,6 +74,10 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     window.localStorage.setItem(TOUR_SEEN_KEY, String(hasSeenTour));
   }, [hasSeenTour]);
+
+  useEffect(() => {
+    window.localStorage.setItem(TRADE_MODE_KEY, tradeMode);
+  }, [tradeMode]);
 
   const currentStep = tourOpen ? TOUR_STEPS[stepIndex] ?? null : null;
 
@@ -78,6 +90,10 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
 
   const setBeginnerMode = useCallback((value: boolean) => {
     setBeginnerModeState(value);
+  }, []);
+
+  const setTradeMode = useCallback((mode: TradeMode) => {
+    setTradeModeState(mode);
   }, []);
 
   const startTour = useCallback((startIndex = 0) => {
@@ -129,6 +145,8 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
     previousStep,
     skipTour,
     activeTourTarget: currentStep?.target ?? null,
+    tradeMode,
+    setTradeMode,
   }), [
     beginnerMode,
     currentStep,
@@ -141,6 +159,8 @@ export function GuidanceProvider({ children }: { children: ReactNode }) {
     startTour,
     stepIndex,
     tourOpen,
+    tradeMode,
+    setTradeMode,
   ]);
 
   return (

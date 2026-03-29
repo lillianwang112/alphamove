@@ -33,7 +33,7 @@ function getLevelColor(level: number): string {
 }
 
 export default function AppShell({ children, user }: AppShellProps) {
-  const { startTour, maybeStartTour, hasSeenTour } = useGuidance();
+  const { startTour, maybeStartTour, hasSeenTour, tradeMode, setTradeMode } = useGuidance();
   const level = user?.level ?? 1;
   const xp = user?.xp ?? 0;
   const xpToNext = user?.xpToNextLevel ?? 200;
@@ -102,6 +102,42 @@ export default function AppShell({ children, user }: AppShellProps) {
         {/* Right: Help + Level + XP */}
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Trade mode toggle */}
+            <div
+              onClick={() => setTradeMode(tradeMode === 'learning' ? 'simulation' : 'learning')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '999px',
+                padding: '2px',
+                cursor: 'pointer',
+                gap: '0',
+                userSelect: 'none',
+              }}
+              title={tradeMode === 'learning' ? 'Switch to Simulation mode' : 'Switch to Learning mode'}
+            >
+              {(['learning', 'simulation'] as const).map((mode) => (
+                <span
+                  key={mode}
+                  style={{
+                    padding: '4px 9px',
+                    borderRadius: '999px',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                    background: tradeMode === mode ? 'var(--accent)' : 'transparent',
+                    color: tradeMode === mode ? 'white' : 'var(--text-muted)',
+                    transition: 'all 0.2s ease',
+                    textTransform: 'capitalize',
+                  }}
+                >
+                  {mode === 'learning' ? 'Learn' : 'Sim'}
+                </span>
+              ))}
+            </div>
+
             <button
               onClick={() => startTour(0)}
               style={{

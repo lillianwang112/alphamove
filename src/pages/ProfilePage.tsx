@@ -19,7 +19,7 @@ function getLevelColor(level: number): string {
 
 export default function ProfilePage() {
   const { user, signOut, updateUser } = useAuth();
-  const { beginnerMode, setBeginnerMode, startTour } = useGuidance();
+  const { beginnerMode, setBeginnerMode, startTour, tradeMode, setTradeMode } = useGuidance();
   const { getXPHistory } = useXP();
   const { portfolio, positions } = usePortfolio(user?.uid ?? '');
   const [xpHistory, setXpHistory] = useState<XPEvent[]>([]);
@@ -413,6 +413,44 @@ export default function ProfilePage() {
                   transition: 'left 0.2s ease',
                 }}
               />
+            </button>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '12px',
+              background: 'var(--surface-elevated)',
+              border: '1px solid var(--border)',
+              borderRadius: '14px',
+              padding: '12px 14px',
+            }}
+          >
+            <div>
+              <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
+                Trade Mode
+              </p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+                {tradeMode === 'learning' ? 'Mentor-guided with XP and ratings' : 'Direct execution, no mentor interruption'}
+              </p>
+            </div>
+            <button
+              onClick={() => setTradeMode(tradeMode === 'learning' ? 'simulation' : 'learning')}
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '999px',
+                padding: '6px 14px',
+                color: tradeMode === 'simulation' ? '#F59E0B' : 'var(--accent)',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              {tradeMode === 'learning' ? 'Learning' : 'Simulation'}
             </button>
           </div>
 

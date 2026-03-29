@@ -15,7 +15,10 @@ import TradeConfirmation from '../components/trade/TradeConfirmation';
 import PostTradeCard from '../components/mentor/PostTradeCard';
 import TourAnchor from '../components/guidance/TourAnchor';
 import LearnSheet from '../components/guidance/LearnSheet';
-import type { TradeAction, MentorMessage, MentorConversation, MoveRating } from '../types';
+import AssetClassSelector from '../components/trade/AssetClassSelector';
+import OptionsChain from '../components/trade/OptionsChain';
+import { getCryptoQuote, getCryptoName } from '../services/cryptoService';
+import type { TradeAction, MentorMessage, MentorConversation, MoveRating, AssetClass, OptionContract } from '../types';
 import type { OrderType } from '../components/trade/TradeForm';
 
 type TradeStep =
@@ -57,7 +60,7 @@ export default function TradePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { beginnerMode } = useGuidance();
+  const { beginnerMode, tradeMode } = useGuidance();
   const { getQuote, getCompanyProfile } = useMarketData();
   const { startPreTradeChat, sendMessage, generatePostTradeAnalysis } = useMentor();
   const { executeTrade } = useTrade();
@@ -73,6 +76,10 @@ export default function TradePage() {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+
+  // Asset class
+  const [assetClass, setAssetClass] = useState<AssetClass>('stock');
+  const [optionContract, setOptionContract] = useState<OptionContract | null>(null);
 
   // Order type
   const [orderType, setOrderType] = useState<OrderType>('market');
@@ -92,25 +99,51 @@ export default function TradePage() {
   const [postTradeResult, setPostTradeResult] = useState<PostTradeResult | null>(null);
   const [learnOpen, setLearnOpen] = useState(false);
 
-  const loadQuote = useCallback(async (sym: string, act: TradeAction, name?: string) => {
+  const loadQuote = useCallback(async (sym: string, act: TradeAction, name?: string, cls?: AssetClass) => {
     setQuoteLoading(true);
+    const resolvedClass = cls ?? assetClass;
     try {
-      const [q, p] = await Promise.all([
-        getQuote(sym),
-        getCompanyProfile(sym).catch(() => null),
-      ]);
-      setQuote(q);
-      setProfile(p);
-      setAction(act);
-      if (p?.name) setCompanyName(p.name);
-      else if (name) setCompanyName(name);
+      if (resolvedClass === 'crypto') {
+        const cryptoQ = await getCryptoQuote(sym);
+        const cryptoQuoteData = {
+          price: cryptoQ.price,
+          change: cryptoQ.change24h,
+          changePct: cryptoQ.changePct24h,
+          high: cryptoQ.price * 1.03,
+          low: cryptoQ.price * 0.97,
+          open: cryptoQ.price - cryptoQ.change24h,
+          prevClose: cryptoQ.price - cryptoQ.change24h,
+        };
+        setQuote(cryptoQuoteData);
+        setProfile({
+          name: getCryptoName(sym),
+          ticker: sym,
+          logo: '',
+          industry: 'Cryptocurrency',
+          marketCap: cryptoQ.marketCap,
+          weburl: '',
+        });
+        setAction(act);
+        if (name) setCompanyName(name);
+        else setCompanyName(getCryptoName(sym));
+      } else {
+        const [q, p] = await Promise.all([
+          getQuote(sym),
+          getCompanyProfile(sym).catch(() => null),
+        ]);
+        setQuote(q);
+        setProfile(p);
+        setAction(act);
+        if (p?.name) setCompanyName(p.name);
+        else if (name) setCompanyName(name);
+      }
       setStep('preview');
     } catch (err) {
       console.error('Failed to load quote:', err);
     } finally {
       setQuoteLoading(false);
     }
-  }, [getCompanyProfile, getQuote]);
+  }, [getCompanyProfile, getQuote, assetClass]);
 
   // Handle URL params for sell flow from portfolio
   useEffect(() => {
@@ -139,6 +172,13 @@ export default function TradePage() {
     setShares(numShares);
     setOrderType(ot);
     setLimitPrice(lp);
+
+    // Simulation mode: skip mentor, go straight to confirmation
+    if (tradeMode === 'simulation') {
+      setStep('confirmation');
+      return;
+    }
+
     if (!quote || !user) {
       setStep('mentor_chat');
       return;
@@ -175,6 +215,55 @@ export default function TradePage() {
       const fallbackConv: MentorConversation = {
         id: `fallback-${Date.now()}`,
         uid: user.uid,
+        mode: 'pre_trade',
+        messages: [],
+        createdAt: null as unknown as MentorConversation['createdAt'],
+      };
+      setConversation(fallbackConv);
+      setMessages([]);
+    } finally {
+      setChatLoading(false);
+      setStep('mentor_chat');
+    }
+  };
+
+  const handleOptionSelect = async (contract: OptionContract) => {
+    setOptionContract(contract);
+    setShares(contract.contracts * 100); // 1 contract = 100 shares
+
+    if (tradeMode === 'simulation') {
+      setStep('confirmation');
+      return;
+    }
+
+    if (!user) return;
+    setChatLoading(true);
+    const portfolioForMentor = portfolio ?? {
+      positions: [],
+      totalValue: user.currentCash ?? 0,
+      totalInvested: 0,
+      dayChange: 0,
+      dayChangePct: 0,
+      allTimeReturn: 0,
+      allTimeReturnPct: 0,
+    };
+    try {
+      const conv = await startPreTradeChat({
+        uid: user.uid,
+        ticker: `${ticker} ${contract.optionType.toUpperCase()} $${contract.strikePrice} ${contract.expirationLabel}`,
+        companyName: contract.underlyingName,
+        action: 'buy',
+        shares: contract.contracts,
+        price: contract.premium * 100,
+        userLevel: user.level ?? 1,
+        portfolio: portfolioForMentor,
+      });
+      setConversation(conv);
+      setMessages(conv.messages);
+    } catch {
+      const fallbackConv: MentorConversation = {
+        id: `fallback-${Date.now()}`,
+        uid: user?.uid ?? '',
         mode: 'pre_trade',
         messages: [],
         createdAt: null as unknown as MentorConversation['createdAt'],
@@ -277,6 +366,19 @@ export default function TradePage() {
         mentorPreTradeAnalysis: mentorSummary,
       });
 
+      // In simulation mode, skip post-trade analysis
+      if (tradeMode === 'simulation') {
+        setPostTradeResult({
+          analysis: 'Trade executed in simulation mode. Switch to Learning mode for AI mentor feedback.',
+          moveRating: 'good',
+          xpEarned: 0,
+          xpReason: 'Simulation mode — no XP awarded',
+          betterMove: null,
+        });
+        setStep('post_trade');
+        return;
+      }
+
       // Generate post-trade analysis
       const portfolioForAnalysis = portfolio ?? {
         positions: [],
@@ -333,6 +435,8 @@ export default function TradePage() {
     setShares(0);
     setOrderType('market');
     setLimitPrice(undefined);
+    setAssetClass('stock');
+    setOptionContract(null);
   };
 
   const currentPosition = positions.find((p) => p.ticker === ticker);
@@ -341,6 +445,10 @@ export default function TradePage() {
     : user?.currentCash ?? 0;
 
   const STEPS_ORDERED: TradeStep[] = ['search', 'preview', 'trade_form', 'mentor_chat', 'confirmation', 'post_trade'];
+
+  // For options: the effective price and shares at confirmation
+  const optionEffectivePrice = optionContract ? optionContract.premium * 100 : 0;
+  const optionTotalCost = optionContract ? optionContract.premium * 100 * optionContract.contracts : 0;
 
   return (
     <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -397,58 +505,208 @@ export default function TradePage() {
               })}
             </div>
           )}
+          {tradeMode === 'simulation' && (
+            <div style={{
+              background: 'rgba(245,158,11,0.1)',
+              border: '1px solid rgba(245,158,11,0.25)',
+              borderRadius: '8px',
+              padding: '6px 12px',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              color: '#F59E0B',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              marginTop: '6px',
+              display: 'inline-block',
+            }}>
+              Simulation Mode — No mentor review
+            </div>
+          )}
         </div>
       </div>
 
       {/* Search step */}
       {step === 'search' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'slideInUp 0.4s ease both' }}>
+          {/* Asset class selector */}
+          <AssetClassSelector
+            value={assetClass}
+            onChange={(cls) => { setAssetClass(cls); setTicker(''); setCompanyName(''); }}
+            userLevel={user?.level ?? 1}
+          />
+
           <TourAnchor id="trade-search">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '14px 16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                }}
-              >
-                <p style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: 600, margin: 0 }}>
-                  Start with one company or ETF you can explain in a sentence.
-                </p>
-                <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
-                  You are not committing real money here. You are practicing how to notice what a business does, why it might move, and what risk you are taking.
-                </p>
-                {beginnerMode && (
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <button
-                      onClick={() => setLearnOpen(true)}
-                      className="btn btn-ghost"
-                      style={{ padding: '10px 12px', fontSize: '0.8rem' }}
-                    >
-                      Learn before searching
-                    </button>
-                    <button
-                      onClick={() => navigate('/mentor', {
-                        state: {
-                          suggestedPrompt: 'I am new. Help me choose a simple first stock or ETF to analyze and explain why.',
-                        },
-                      })}
-                      className="btn btn-secondary"
-                      style={{ padding: '10px 12px', fontSize: '0.8rem' }}
-                    >
-                      Ask Alpha what to analyze
-                    </button>
+              {assetClass !== 'option' && (
+                <div
+                  style={{
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}
+                >
+                  <p style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: 600, margin: 0 }}>
+                    {assetClass === 'crypto'
+                      ? 'Pick a crypto asset you can explain in a sentence.'
+                      : assetClass === 'etf'
+                      ? 'ETFs let you bet on a sector or the whole market at once.'
+                      : 'Start with one company or ETF you can explain in a sentence.'}
+                  </p>
+                  {tradeMode === 'learning' && (
+                    <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+                      {assetClass === 'crypto'
+                        ? 'Crypto trades 24/7 and is highly volatile. Having a clear thesis matters even more here.'
+                        : 'You are not committing real money here. You are practicing how to notice what a business does, why it might move, and what risk you are taking.'}
+                    </p>
+                  )}
+                  {tradeMode === 'learning' && beginnerMode && assetClass === 'stock' && (
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => setLearnOpen(true)}
+                        className="btn btn-ghost"
+                        style={{ padding: '10px 12px', fontSize: '0.8rem' }}
+                      >
+                        Learn before searching
+                      </button>
+                      <button
+                        onClick={() => navigate('/mentor', {
+                          state: {
+                            suggestedPrompt: 'I am new. Help me choose a simple first stock or ETF to analyze and explain why.',
+                          },
+                        })}
+                        className="btn btn-secondary"
+                        style={{ padding: '10px 12px', fontSize: '0.8rem' }}
+                      >
+                        Ask Alpha what to analyze
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {assetClass === 'option' && (
+                <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 'var(--radius-lg)', padding: '14px 16px' }}>
+                  <p style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--accent)', marginBottom: '6px' }}>
+                    Step 1: Pick the underlying stock
+                  </p>
+                  <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+                    Options are contracts ON a stock. First find the stock you want to trade options on, then you'll pick call/put, strike, and expiration.
+                  </p>
+                </div>
+              )}
+
+              <TickerSearch onSelect={(symbol, name) => {
+                setTicker(symbol);
+                setCompanyName(name);
+                if (assetClass === 'option') {
+                  loadQuote(symbol, 'buy', name, 'stock');
+                } else {
+                  loadQuote(symbol, 'buy', name, assetClass);
+                }
+              }} />
+
+              {assetClass !== 'crypto' && assetClass !== 'option' && (
+                <div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                    {assetClass === 'etf' ? 'Popular ETFs' : 'Popular'}
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {(assetClass === 'etf'
+                      ? ['SPY', 'QQQ', 'VTI', 'GLD', 'IWM', 'ARKK', 'VNQ', 'XLF']
+                      : ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'SPY']
+                    ).map((sym) => (
+                      <button
+                        key={sym}
+                        onClick={() => {
+                          setTicker(sym);
+                          setCompanyName(sym);
+                          loadQuote(sym, 'buy', sym, assetClass);
+                        }}
+                        style={{
+                          background: 'var(--surface)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '8px 14px',
+                          color: 'var(--text-secondary)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                        onMouseEnter={(e) => {
+                          const el = e.currentTarget;
+                          el.style.background = 'var(--accent-light)';
+                          el.style.borderColor = 'var(--accent)';
+                          el.style.color = 'var(--accent)';
+                        }}
+                        onMouseLeave={(e) => {
+                          const el = e.currentTarget;
+                          el.style.background = 'var(--surface)';
+                          el.style.borderColor = 'var(--border)';
+                          el.style.color = 'var(--text-secondary)';
+                        }}
+                      >
+                        {sym}
+                      </button>
+                    ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              <TickerSearch onSelect={handleTickerSelect} />
+              {assetClass === 'crypto' && (
+                <div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                    Popular Crypto
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {['BTC', 'ETH', 'SOL', 'DOGE', 'ADA', 'AVAX', 'LINK', 'XRP'].map((sym) => (
+                      <button
+                        key={sym}
+                        onClick={() => {
+                          setTicker(sym);
+                          setCompanyName(getCryptoName(sym));
+                          loadQuote(sym, 'buy', getCryptoName(sym), 'crypto');
+                        }}
+                        style={{
+                          background: 'var(--surface)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '8px 14px',
+                          color: 'var(--text-secondary)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          WebkitTapHighlightColor: 'transparent',
+                        }}
+                        onMouseEnter={(e) => {
+                          const el = e.currentTarget;
+                          el.style.background = 'rgba(245,158,11,0.15)';
+                          el.style.borderColor = '#F59E0B';
+                          el.style.color = '#F59E0B';
+                        }}
+                        onMouseLeave={(e) => {
+                          const el = e.currentTarget;
+                          el.style.background = 'var(--surface)';
+                          el.style.borderColor = 'var(--border)';
+                          el.style.color = 'var(--text-secondary)';
+                        }}
+                      >
+                        {sym}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              {beginnerMode && (
+              {beginnerMode && tradeMode === 'learning' && assetClass === 'stock' && (
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
                   Try typing a company you know, like Apple or Microsoft, or start with SPY if you want to practice on a broad market ETF instead of one company.
                 </p>
@@ -471,52 +729,7 @@ export default function TradePage() {
             </div>
           )}
 
-          <div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-              Popular
-            </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'SPY'].map((sym) => (
-                <button
-                  key={sym}
-                  onClick={() => {
-                    setTicker(sym);
-                    setCompanyName(sym);
-                    loadQuote(sym, 'buy', sym);
-                  }}
-                  style={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '8px 14px',
-                    color: 'var(--text-secondary)',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                  onMouseEnter={(e) => {
-                    const el = e.currentTarget;
-                    el.style.background = 'var(--accent-light)';
-                    el.style.borderColor = 'var(--accent)';
-                    el.style.color = 'var(--accent)';
-                  }}
-                  onMouseLeave={(e) => {
-                    const el = e.currentTarget;
-                    el.style.background = 'var(--surface)';
-                    el.style.borderColor = 'var(--border)';
-                    el.style.color = 'var(--text-secondary)';
-                  }}
-                >
-                  {sym}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {beginnerMode && (
+          {beginnerMode && tradeMode === 'learning' && assetClass === 'stock' && (
             <div
               style={{
                 display: 'grid',
@@ -569,8 +782,18 @@ export default function TradePage() {
         </div>
       )}
 
-      {/* Preview step */}
-      {step === 'preview' && quote && (
+      {/* Preview step — options flow shows OptionsChain instead of StockPreview */}
+      {step === 'preview' && quote && assetClass === 'option' && (
+        <OptionsChain
+          ticker={ticker}
+          companyName={companyName || profile?.name || ticker}
+          currentPrice={quote.price}
+          onSelect={handleOptionSelect}
+        />
+      )}
+
+      {/* Preview step — normal stock/etf/crypto */}
+      {step === 'preview' && quote && assetClass !== 'option' && (
         <StockPreview
           ticker={ticker}
           companyName={companyName || profile?.name || ticker}
@@ -611,11 +834,17 @@ export default function TradePage() {
             }}
           >
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Reviewing: <strong style={{ color: 'var(--text-primary)' }}>{action === 'buy' ? 'Buy' : 'Sell'} {shares} × {ticker}</strong>
+              Reviewing: <strong style={{ color: 'var(--text-primary)' }}>
+                {assetClass === 'option' && optionContract
+                  ? `${ticker} ${optionContract.optionType.toUpperCase()} $${optionContract.strikePrice} ${optionContract.expirationLabel}`
+                  : `${action === 'buy' ? 'Buy' : 'Sell'} ${shares} × ${ticker}`}
+              </strong>
             </span>
             {quote && (
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                ~${(shares * quote.price).toFixed(2)}
+                {assetClass === 'option' && optionContract
+                  ? `~$${optionTotalCost.toFixed(2)}`
+                  : `~$${(shares * quote.price).toFixed(2)}`}
               </span>
             )}
           </div>
@@ -645,13 +874,19 @@ export default function TradePage() {
       {step === 'confirmation' && quote && (
         <TradeConfirmation
           action={action}
-          ticker={ticker}
-          shares={shares}
-          price={(orderType !== 'market' && limitPrice) ? limitPrice : quote.price}
-          total={shares * ((orderType !== 'market' && limitPrice) ? limitPrice : quote.price)}
+          ticker={assetClass === 'option' && optionContract
+            ? `${ticker} ${optionContract.optionType.toUpperCase()} $${optionContract.strikePrice} ${optionContract.expirationLabel}`
+            : ticker}
+          shares={assetClass === 'option' && optionContract ? optionContract.contracts : shares}
+          price={assetClass === 'option' && optionContract
+            ? optionEffectivePrice
+            : (orderType !== 'market' && limitPrice) ? limitPrice : quote.price}
+          total={assetClass === 'option' && optionContract
+            ? optionTotalCost
+            : shares * ((orderType !== 'market' && limitPrice) ? limitPrice : quote.price)}
           orderType={orderType}
           onConfirm={handleConfirmTrade}
-          onCancel={() => setStep('mentor_chat')}
+          onCancel={() => assetClass === 'option' ? setStep('preview') : setStep('mentor_chat')}
           loading={tradeLoading}
         />
       )}
