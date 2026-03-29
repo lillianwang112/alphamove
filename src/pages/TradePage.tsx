@@ -981,7 +981,11 @@ export default function TradePage() {
           timeInForce={timeInForce}
           trailingPct={trailingPct}
           onConfirm={handleConfirmTrade}
-          onCancel={() => assetClass === 'option' ? setStep('preview') : setStep('mentor_chat')}
+          onCancel={() => {
+            if (assetClass === 'option') setStep('preview');
+            else if (tradeMode === 'simulation') setStep('trade_form');
+            else setStep('mentor_chat');
+          }}
           loading={tradeLoading}
         />
       )}

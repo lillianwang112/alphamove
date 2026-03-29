@@ -4,6 +4,7 @@ import './styles/globals.css';
 import './styles/animations.css';
 
 import { useAuth } from './hooks/useAuth';
+import { invalidatePortfolioCache } from './hooks/usePortfolio';
 import { GuidanceProvider } from './context/GuidanceContext';
 import AppShell from './components/layout/AppShell';
 import WelcomeScreen from './components/onboarding/WelcomeScreen';
@@ -187,6 +188,8 @@ function AuthGate() {
         currentCash: amount,
         onboardingComplete: true,
       });
+      // Clear stale portfolio cache so TradePage reads fresh currentCash
+      if (user?.uid) invalidatePortfolioCache(user.uid);
     };
 
     return (
