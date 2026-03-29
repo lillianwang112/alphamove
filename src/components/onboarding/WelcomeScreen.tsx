@@ -1,10 +1,26 @@
+import { useState } from 'react';
+
 interface WelcomeScreenProps {
   onSignIn: () => void;
-  onGuestSignIn: () => void;
+  onGuestSignIn: () => Promise<void>;
   loading: boolean;
 }
 
 export default function WelcomeScreen({ onSignIn, onGuestSignIn, loading }: WelcomeScreenProps) {
+  const [guestLoading, setGuestLoading] = useState(false);
+  const [guestError, setGuestError] = useState('');
+
+  const handleGuestSignIn = async () => {
+    setGuestLoading(true);
+    setGuestError('');
+    try {
+      await onGuestSignIn();
+    } catch (err) {
+      console.error('Guest sign-in failed:', err);
+      setGuestError('Could not start guest session. Please try again.');
+      setGuestLoading(false);
+    }
+  };
   return (
     <div
       style={{
@@ -200,24 +216,41 @@ export default function WelcomeScreen({ onSignIn, onGuestSignIn, loading }: Welc
 
         {/* Guest sign-in */}
         <button
-          onClick={onGuestSignIn}
-          disabled={loading}
+          onClick={handleGuestSignIn}
+          disabled={loading || guestLoading}
           style={{
             background: 'none',
             border: 'none',
-            color: 'var(--text-muted)',
+            color: guestLoading ? 'var(--accent)' : 'var(--text-muted)',
             fontSize: '0.88rem',
-            cursor: 'pointer',
+            cursor: guestLoading ? 'default' : 'pointer',
             marginTop: '16px',
-            padding: '8px',
-            textDecoration: 'underline',
+            padding: '12px 16px',
+            textDecoration: guestLoading ? 'none' : 'underline',
             textDecorationColor: 'rgba(148,163,184,0.35)',
             textUnderlineOffset: '3px',
             WebkitTapHighlightColor: 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            minHeight: '44px',
           }}
         >
-          Continue as Guest →
+          {guestLoading ? (
+            <>
+              <span style={{ width: '14px', height: '14px', border: '2px solid rgba(99,102,241,0.3)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block', flexShrink: 0 }} />
+              Starting guest session…
+            </>
+          ) : (
+            'Continue as Guest →'
+          )}
         </button>
+
+        {guestError && (
+          <p style={{ color: 'var(--danger)', fontSize: '0.78rem', textAlign: 'center', marginTop: '4px' }}>
+            ⚠ {guestError}
+          </p>
+        )}
 
         {/* Disclaimer */}
         <p
