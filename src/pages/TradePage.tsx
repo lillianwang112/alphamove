@@ -16,6 +16,7 @@ import PostTradeCard from '../components/mentor/PostTradeCard';
 import TourAnchor from '../components/guidance/TourAnchor';
 import LearnSheet from '../components/guidance/LearnSheet';
 import type { TradeAction, MentorMessage, MentorConversation, MoveRating } from '../types';
+import type { OrderType } from '../components/trade/TradeForm';
 
 type TradeStep =
   | 'search'
@@ -72,6 +73,10 @@ export default function TradePage() {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+
+  // Order type
+  const [orderType, setOrderType] = useState<OrderType>('market');
+  const [limitPrice, setLimitPrice] = useState<number | undefined>(undefined);
 
   // Mentor chat
   const [conversation, setConversation] = useState<MentorConversation | null>(null);
@@ -130,8 +135,10 @@ export default function TradePage() {
   const handleBuy = () => { setAction('buy'); setStep('trade_form'); };
   const handleSell = () => { setAction('sell'); setStep('trade_form'); };
 
-  const handleSharesSubmit = async (numShares: number) => {
+  const handleSharesSubmit = async (numShares: number, ot: OrderType, lp?: number) => {
     setShares(numShares);
+    setOrderType(ot);
+    setLimitPrice(lp);
     if (!quote || !user) {
       setStep('mentor_chat');
       return;
@@ -256,13 +263,16 @@ export default function TradePage() {
         .join(' | ')
         || 'No thesis provided';
 
+      // Use limit price for non-market orders (simulated fill at specified price)
+      const executionPrice = (orderType !== 'market' && limitPrice) ? limitPrice : quote.price;
+
       const trade = await executeTrade({
         uid: user.uid,
         ticker,
         companyName: companyName || profile?.name || ticker,
         action,
         shares,
-        price: quote.price,
+        price: executionPrice,
         thesis: userThesis,
         mentorPreTradeAnalysis: mentorSummary,
       });
@@ -321,6 +331,8 @@ export default function TradePage() {
     setMentorSummary('');
     setPostTradeResult(null);
     setShares(0);
+    setOrderType('market');
+    setLimitPrice(undefined);
   };
 
   const currentPosition = positions.find((p) => p.ticker === ticker);
@@ -577,6 +589,7 @@ export default function TradePage() {
           price={quote.price}
           availableCash={availableCash}
           maxShares={action === 'sell' ? currentPosition?.shares : undefined}
+          userLevel={user?.level ?? 1}
           onSubmit={handleSharesSubmit}
           onBack={() => setStep('preview')}
         />
@@ -634,8 +647,9 @@ export default function TradePage() {
           action={action}
           ticker={ticker}
           shares={shares}
-          price={quote.price}
-          total={shares * quote.price}
+          price={(orderType !== 'market' && limitPrice) ? limitPrice : quote.price}
+          total={shares * ((orderType !== 'market' && limitPrice) ? limitPrice : quote.price)}
+          orderType={orderType}
           onConfirm={handleConfirmTrade}
           onCancel={() => setStep('mentor_chat')}
           loading={tradeLoading}

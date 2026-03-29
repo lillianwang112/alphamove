@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import BottomSheet from '../guidance/BottomSheet';
 import InfoButton from '../guidance/InfoButton';
+import type { OrderType } from './TradeForm';
 
 interface TradeConfirmationProps {
   action: 'buy' | 'sell';
@@ -8,10 +9,17 @@ interface TradeConfirmationProps {
   shares: number;
   price: number;
   total: number;
+  orderType?: OrderType;
   onConfirm: () => void;
   onCancel: () => void;
   loading: boolean;
 }
+
+const ORDER_LABELS: Record<string, string> = {
+  market: 'Market Order',
+  limit: 'Limit Order',
+  stop_loss: 'Stop-Loss',
+};
 
 export default function TradeConfirmation({
   action,
@@ -19,6 +27,7 @@ export default function TradeConfirmation({
   shares,
   price,
   total,
+  orderType = 'market',
   onConfirm,
   onCancel,
   loading,
@@ -106,6 +115,14 @@ export default function TradeConfirmation({
             ),
           },
           {
+            label: 'Order Type',
+            value: (
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                {ORDER_LABELS[orderType] ?? 'Market Order'}
+              </span>
+            ),
+          },
+          {
             label: 'Ticker',
             value: (
               <span
@@ -129,7 +146,7 @@ export default function TradeConfirmation({
             ),
           },
           {
-            label: 'Price',
+            label: orderType !== 'market' ? 'Limit Price' : 'Price',
             value: (
               <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-primary)' }}>
                 ${price.toFixed(2)}
@@ -144,7 +161,7 @@ export default function TradeConfirmation({
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '12px 0',
-              borderBottom: i < 3 ? '1px solid var(--border)' : 'none',
+              borderBottom: i < 4 ? '1px solid var(--border)' : 'none',
             }}
           >
             <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>

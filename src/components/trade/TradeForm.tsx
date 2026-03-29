@@ -1,14 +1,35 @@
 import { useState } from 'react';
 
+export type OrderType = 'market' | 'limit' | 'stop_loss';
+
 interface TradeFormProps {
   action: 'buy' | 'sell';
   ticker: string;
   price: number;
   availableCash: number;
   maxShares?: number;
-  onSubmit: (shares: number) => void;
+  userLevel?: number;
+  onSubmit: (shares: number, orderType: OrderType, limitPrice?: number) => void;
   onBack?: () => void;
 }
+
+const ORDER_TYPE_INFO: Record<OrderType, { label: string; desc: string; color: string }> = {
+  market: {
+    label: 'Market Order',
+    desc: 'Execute immediately at the current market price. Fast, but price may vary slightly.',
+    color: 'var(--accent)',
+  },
+  limit: {
+    label: 'Limit Order',
+    desc: 'Set a maximum price (buy) or minimum price (sell). Only executes at your price or better.',
+    color: 'var(--success)',
+  },
+  stop_loss: {
+    label: 'Stop-Loss',
+    desc: 'Automatically sells if the price drops to your stop price. Protects against large losses.',
+    color: '#F59E0B',
+  },
+};
 
 export default function TradeForm({
   action,
@@ -16,21 +37,44 @@ export default function TradeForm({
   price,
   availableCash,
   maxShares,
+  userLevel = 1,
   onSubmit,
   onBack,
 }: TradeFormProps) {
   const [shares, setShares] = useState<string>('1');
   const [error, setError] = useState<string>('');
+  const [orderType, setOrderType] = useState<OrderType>('market');
+  const [limitPrice, setLimitPrice] = useState<string>(price.toFixed(2));
+  const [showOrderInfo, setShowOrderInfo] = useState(false);
 
   const numShares = parseFloat(shares) || 0;
-  const totalCost = numShares * price;
+  const effectivePrice = orderType === 'market' ? price : (parseFloat(limitPrice) || price);
+  const totalCost = numShares * effectivePrice;
   const isBuy = action === 'buy';
-  const maxBuyShares = Math.floor(availableCash / price);
+  const maxBuyShares = Math.floor(availableCash / effectivePrice);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Order types unlocked by level
+  const canUseLimit = userLevel >= 3;
+  const canUseStopLoss = userLevel >= 6 && !isBuy; // stop-loss is sell-side only
+
+  const availableOrderTypes: OrderType[] = [
+    'market',
+    ...(canUseLimit ? ['limit' as OrderType] : []),
+    ...(canUseStopLoss ? ['stop_loss' as OrderType] : []),
+  ];
+
+  const handleSharesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     if (val === '' || /^\d*\.?\d*$/.test(val)) {
       setShares(val);
+      setError('');
+    }
+  };
+
+  const handleLimitPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+      setLimitPrice(val);
       setError('');
     }
   };
@@ -40,6 +84,21 @@ export default function TradeForm({
       setError('Enter a valid number of shares');
       return;
     }
+    if (orderType !== 'market') {
+      const lp = parseFloat(limitPrice);
+      if (!lp || lp <= 0) {
+        setError('Enter a valid limit price');
+        return;
+      }
+      if (orderType === 'limit' && isBuy && lp > price * 1.5) {
+        setError('Limit price is far above market price — consider a market order');
+        return;
+      }
+      if (orderType === 'stop_loss' && lp >= price) {
+        setError('Stop price must be below current market price');
+        return;
+      }
+    }
     if (isBuy && totalCost > availableCash) {
       setError(`Insufficient cash. Max ${maxBuyShares} shares at this price.`);
       return;
@@ -48,7 +107,7 @@ export default function TradeForm({
       setError(`You only own ${maxShares} shares of ${ticker}`);
       return;
     }
-    onSubmit(numShares);
+    onSubmit(numShares, orderType, orderType !== 'market' ? parseFloat(limitPrice) : undefined);
   };
 
   const quickAmounts = isBuy
@@ -69,6 +128,8 @@ export default function TradeForm({
   const isOverBudget = isBuy && totalCost > availableCash;
   const isOverHolding = !isBuy && maxShares && numShares > maxShares;
   const isInvalid = !numShares || numShares <= 0 || isOverBudget || isOverHolding;
+
+  const selectedOrderInfo = ORDER_TYPE_INFO[orderType];
 
   return (
     <div
@@ -108,7 +169,7 @@ export default function TradeForm({
             </svg>
           </button>
         )}
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span
               style={{
@@ -136,12 +197,210 @@ export default function TradeForm({
             </span>
           </div>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-            @ ${price.toFixed(2)} per share
+            Market price: ${price.toFixed(2)} / share
           </p>
         </div>
       </div>
 
       <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+        {/* Order Type Selector — shown for Level 3+ */}
+        {availableOrderTypes.length > 1 && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <label style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Order Type
+              </label>
+              <button
+                onClick={() => setShowOrderInfo(!showOrderInfo)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--accent)',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                }}
+              >
+                {showOrderInfo ? 'Hide info ↑' : 'What are these? ↓'}
+              </button>
+            </div>
+
+            {showOrderInfo && (
+              <div
+                style={{
+                  background: 'rgba(99,102,241,0.06)',
+                  border: '1px solid rgba(99,102,241,0.18)',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  marginBottom: '10px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                {availableOrderTypes.map((ot) => {
+                  const info = ORDER_TYPE_INFO[ot];
+                  return (
+                    <div key={ot}>
+                      <p style={{ fontSize: '0.8rem', fontWeight: 700, color: info.color, marginBottom: '2px' }}>
+                        {info.label}
+                      </p>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                        {info.desc}
+                      </p>
+                    </div>
+                  );
+                })}
+                {!canUseLimit && (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', margin: 0 }}>
+                    Limit orders unlock at Level 3. Stop-loss unlocks at Level 6.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${availableOrderTypes.length}, 1fr)`, gap: '8px' }}>
+              {availableOrderTypes.map((ot) => {
+                const info = ORDER_TYPE_INFO[ot];
+                const isSelected = orderType === ot;
+                return (
+                  <button
+                    key={ot}
+                    onClick={() => { setOrderType(ot); setError(''); }}
+                    style={{
+                      padding: '10px 8px',
+                      background: isSelected ? `${info.color}18` : 'var(--surface-elevated)',
+                      border: `1px solid ${isSelected ? info.color : 'var(--border)'}`,
+                      borderRadius: '10px',
+                      color: isSelected ? info.color : 'var(--text-secondary)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    {ot === 'market' ? 'Market' : ot === 'limit' ? 'Limit' : 'Stop-Loss'}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Info badge for selected order type */}
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.5 }}>
+              {selectedOrderInfo.desc}
+            </p>
+          </div>
+        )}
+
+        {/* Limit price input */}
+        {orderType !== 'market' && (
+          <div>
+            <label
+              style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                marginBottom: '10px',
+              }}
+            >
+              {orderType === 'limit'
+                ? (isBuy ? 'Max buy price per share' : 'Min sell price per share')
+                : 'Stop price (triggers sell below this)'}
+            </label>
+            <div style={{ position: 'relative' }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: '14px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  fontSize: '1.2rem',
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--text-secondary)',
+                  pointerEvents: 'none',
+                }}
+              >
+                $
+              </span>
+              <input
+                type="number"
+                value={limitPrice}
+                onChange={handleLimitPriceChange}
+                step="0.01"
+                min="0.01"
+                className="input"
+                style={{
+                  paddingLeft: '28px',
+                  fontSize: '1.4rem',
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 600,
+                  height: '58px',
+                  textAlign: 'center',
+                  letterSpacing: '-0.01em',
+                }}
+                placeholder={price.toFixed(2)}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              {isBuy
+                ? [0.95, 0.97, 0.99].map((pct) => (
+                    <button
+                      key={pct}
+                      onClick={() => { setLimitPrice((price * pct).toFixed(2)); setError(''); }}
+                      style={{
+                        flex: 1,
+                        padding: '7px 4px',
+                        background: 'var(--surface-elevated)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      -{Math.round((1 - pct) * 100)}%
+                    </button>
+                  ))
+                : [0.95, 0.90, 0.85].map((pct) => (
+                    <button
+                      key={pct}
+                      onClick={() => { setLimitPrice((price * pct).toFixed(2)); setError(''); }}
+                      style={{
+                        flex: 1,
+                        padding: '7px 4px',
+                        background: 'var(--surface-elevated)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {'-' + Math.round((1 - pct) * 100)}%
+                    </button>
+                  ))}
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+              Current market price: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontWeight: 600 }}>${price.toFixed(2)}</span>
+              {orderType === 'limit' && (
+                <span style={{ color: parseFloat(limitPrice) < price ? 'var(--success)' : 'var(--text-muted)' }}>
+                  {parseFloat(limitPrice) < price
+                    ? ` · ${((price - parseFloat(limitPrice)) / price * 100).toFixed(1)}% below market ✓`
+                    : parseFloat(limitPrice) > price && isBuy
+                    ? ' · Above market (may execute immediately)'
+                    : ''}
+                </span>
+              )}
+            </p>
+          </div>
+        )}
+
         {/* Cash/shares info bar */}
         <div
           style={{
@@ -209,7 +468,7 @@ export default function TradeForm({
           <input
             type="number"
             value={shares}
-            onChange={handleChange}
+            onChange={handleSharesChange}
             min="0.0001"
             step="1"
             className="input"
@@ -273,25 +532,47 @@ export default function TradeForm({
             border: `1px solid ${isOverBudget ? 'rgba(239,68,68,0.3)' : isBuy ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`,
             borderRadius: 'var(--radius-md)',
             padding: '14px 16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-            {isBuy ? 'Total Cost' : 'You Receive'}
-          </span>
-          <span
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+              {isBuy ? 'Estimated Cost' : 'You Receive'}
+            </span>
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                color: isOverBudget ? 'var(--danger)' : isBuy ? 'var(--success)' : 'var(--warning)',
+              }}
+            >
+              ${totalCost.toFixed(2)}
+            </span>
+          </div>
+          {orderType !== 'market' && numShares > 0 && (
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', margin: '6px 0 0' }}>
+              {orderType === 'limit'
+                ? `At your limit price of $${parseFloat(limitPrice || '0').toFixed(2)}/share`
+                : `Triggers if price drops to $${parseFloat(limitPrice || '0').toFixed(2)}`}
+            </p>
+          )}
+        </div>
+
+        {/* Beginner hint — only for first trades */}
+        {userLevel <= 2 && (
+          <div
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '1.25rem',
-              fontWeight: 700,
-              color: isOverBudget ? 'var(--danger)' : isBuy ? 'var(--success)' : 'var(--warning)',
+              background: 'rgba(99,102,241,0.06)',
+              border: '1px solid rgba(99,102,241,0.16)',
+              borderRadius: '12px',
+              padding: '12px 14px',
             }}
           >
-            ${totalCost.toFixed(2)}
-          </span>
-        </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+              <strong style={{ color: 'var(--accent)' }}>Tip:</strong> Start with 1–5 shares to keep your risk small. You can always buy more later. Limit and Stop-Loss orders unlock at Levels 3 and 6.
+            </p>
+          </div>
+        )}
 
         {/* Submit button */}
         <button

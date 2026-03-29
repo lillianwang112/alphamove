@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/globals.css';
 import './styles/animations.css';
@@ -7,6 +8,7 @@ import { GuidanceProvider } from './context/GuidanceContext';
 import AppShell from './components/layout/AppShell';
 import WelcomeScreen from './components/onboarding/WelcomeScreen';
 import CapitalInput from './components/onboarding/CapitalInput';
+import OnboardingWizard, { hasSeenWizard } from './components/onboarding/OnboardingWizard';
 import HomePage from './pages/HomePage';
 import PortfolioPage from './pages/PortfolioPage';
 import TradePage from './pages/TradePage';
@@ -88,6 +90,7 @@ function LoadingScreen() {
 
 function AuthGate() {
   const { user, loading, signIn, updateUser } = useAuth();
+  const [wizardDone, setWizardDone] = useState(false);
 
   if (loading) {
     return <LoadingScreen />;
@@ -115,6 +118,18 @@ function AuthGate() {
         <CapitalInput
           onSubmit={handleCapitalSubmit}
           userName={user.displayName || 'Trader'}
+        />
+      </div>
+    );
+  }
+
+  // Show onboarding wizard for new users who haven't seen it yet
+  if (!wizardDone && !hasSeenWizard()) {
+    return (
+      <div className="app-container">
+        <OnboardingWizard
+          startingCapital={user.startingCapital || 500}
+          onComplete={() => setWizardDone(true)}
         />
       </div>
     );

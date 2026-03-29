@@ -8,6 +8,7 @@ import LevelRoadmap from '../components/leveling/LevelRoadmap';
 import TourAnchor from '../components/guidance/TourAnchor';
 import { useEffect } from 'react';
 import type { XPEvent } from '../types';
+import { getPositions, removePosition, updateUserData } from '../services/portfolioService';
 
 function getLevelColor(level: number): string {
   if (level <= 2) return '#64748B';
@@ -17,7 +18,7 @@ function getLevelColor(level: number): string {
 }
 
 export default function ProfilePage() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, updateUser } = useAuth();
   const { beginnerMode, setBeginnerMode, startTour } = useGuidance();
   const { getXPHistory } = useXP();
   const { portfolio, positions } = usePortfolio(user?.uid ?? '');
@@ -25,6 +26,10 @@ export default function ProfilePage() {
   const [xpLoading, setXpLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
+  const [showCapitalModal, setShowCapitalModal] = useState(false);
+  const [newCapital, setNewCapital] = useState('');
+  const [capitalError, setCapitalError] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -40,6 +45,54 @@ export default function ProfilePage() {
       await signOut();
     } catch {
       setSigningOut(false);
+    }
+  };
+
+  const handleResetPortfolio = async () => {
+    if (!user) return;
+    setResetting(true);
+    try {
+      // Remove all positions
+      const allPositions = await getPositions(user.uid);
+      await Promise.all(allPositions.map((p) => removePosition(user.uid, p.id)));
+      // Reset cash to starting capital
+      await updateUserData(user.uid, {
+        currentCash: user.startingCapital,
+        totalTrades: 0,
+      });
+      await updateUser({ currentCash: user.startingCapital, totalTrades: 0 });
+      alert('Portfolio reset! Your cash has been restored to $' + user.startingCapital.toLocaleString());
+    } catch (err) {
+      console.error('Reset error:', err);
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleChangeCapital = async () => {
+    if (!user) return;
+    const amount = parseInt(newCapital.replace(/[^0-9]/g, ''), 10);
+    if (!amount || amount < 100) { setCapitalError('Minimum is $100'); return; }
+    if (amount > 100000) { setCapitalError('Maximum is $100,000'); return; }
+    setResetting(true);
+    try {
+      // Clear positions + set new capital
+      const allPositions = await getPositions(user.uid);
+      await Promise.all(allPositions.map((p) => removePosition(user.uid, p.id)));
+      await updateUserData(user.uid, {
+        startingCapital: amount,
+        currentCash: amount,
+        totalTrades: 0,
+      });
+      await updateUser({ startingCapital: amount, currentCash: amount, totalTrades: 0 });
+      setShowCapitalModal(false);
+      setNewCapital('');
+      setCapitalError('');
+      alert(`Portfolio reset with $${amount.toLocaleString()} starting capital!`);
+    } catch (err) {
+      console.error('Capital change error:', err);
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -437,6 +490,144 @@ export default function ProfilePage() {
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Paper Trading Settings */}
+      <div
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both',
+          animationDelay: '0.28s',
+        }}
+      >
+        <div>
+          <p style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
+            Paper Trading
+          </p>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+            Starting capital: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-primary)' }}>${(user.startingCapital || 0).toLocaleString()}</span>
+            {' · '}
+            Cash available: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--success)' }}>${(user.currentCash || 0).toFixed(2)}</span>
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => { setShowCapitalModal(true); setNewCapital(String(user.startingCapital || 500)); }}
+            className="btn btn-secondary"
+            style={{ flex: 1, fontSize: '0.85rem', padding: '10px 12px' }}
+          >
+            Change Capital
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm('Reset your portfolio? This will clear all positions and restore your cash to $' + (user.startingCapital || 500).toLocaleString() + '.')) {
+                void handleResetPortfolio();
+              }
+            }}
+            disabled={resetting}
+            className="btn btn-ghost"
+            style={{ flex: 1, fontSize: '0.85rem', padding: '10px 12px', color: 'var(--warning)', borderColor: 'rgba(245,158,11,0.3)' }}
+          >
+            {resetting ? 'Resetting...' : 'Reset Portfolio'}
+          </button>
+        </div>
+      </div>
+
+      {/* Capital Change Modal */}
+      {showCapitalModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 200,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'flex-end',
+            padding: '0',
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setShowCapitalModal(false); }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 'var(--app-max-width)',
+              margin: '0 auto',
+              background: 'var(--surface)',
+              borderRadius: '24px 24px 0 0',
+              padding: '24px 20px 40px',
+              animation: 'slideInUp 0.3s ease both',
+            }}
+          >
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              Change Starting Capital
+            </h3>
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '20px' }}>
+              This will reset your portfolio — all positions will be cleared and you'll start fresh with the new amount.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px', marginBottom: '16px' }}>
+              {[200, 500, 1000, 2000].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => { setNewCapital(String(p)); setCapitalError(''); }}
+                  style={{
+                    padding: '10px 6px',
+                    background: parseInt(newCapital) === p ? 'var(--accent-light)' : 'var(--surface-elevated)',
+                    border: `1px solid ${parseInt(newCapital) === p ? 'var(--accent)' : 'var(--border)'}`,
+                    borderRadius: '10px',
+                    color: parseInt(newCapital) === p ? 'var(--accent)' : 'var(--text-secondary)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ${p.toLocaleString()}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ position: 'relative', marginBottom: '8px' }}>
+              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.25rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', pointerEvents: 'none' }}>$</span>
+              <input
+                type="number"
+                value={newCapital}
+                onChange={(e) => { setNewCapital(e.target.value.replace(/[^0-9]/g, '')); setCapitalError(''); }}
+                className="input"
+                style={{ paddingLeft: '32px', fontSize: '1.4rem', fontFamily: 'var(--font-mono)', fontWeight: 600, height: '60px', borderColor: capitalError ? 'var(--danger)' : undefined }}
+                placeholder="500"
+              />
+            </div>
+            {capitalError && (
+              <p style={{ color: 'var(--danger)', fontSize: '0.8rem', marginBottom: '8px' }}>⚠ {capitalError}</p>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+              <button
+                onClick={() => { setShowCapitalModal(false); setCapitalError(''); }}
+                className="btn btn-ghost"
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void handleChangeCapital()}
+                disabled={resetting}
+                className="btn btn-primary"
+                style={{ flex: 1.5 }}
+              >
+                {resetting ? 'Saving...' : 'Reset & Start Fresh'}
+              </button>
+            </div>
           </div>
         </div>
       )}

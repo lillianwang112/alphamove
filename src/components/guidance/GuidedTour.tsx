@@ -27,12 +27,12 @@ export default function GuidedTour() {
     >
       <div
         style={{
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          bottom: 'calc(var(--bottom-nav-height) + 12px)',
-          width: 'calc(100% - 24px)',
-          maxWidth: 'calc(var(--app-max-width) - 16px)',
+          position: 'fixed',
+          left: '12px',
+          right: '12px',
+          bottom: 'calc(var(--bottom-nav-height, 64px) + 12px)',
+          maxWidth: '460px',
+          margin: '0 auto',
           background: 'linear-gradient(135deg, rgba(21, 23, 38, 0.98) 0%, rgba(13, 15, 25, 0.98) 100%)',
           border: '1px solid var(--border-strong)',
           borderRadius: '20px',

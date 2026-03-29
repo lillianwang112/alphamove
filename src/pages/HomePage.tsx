@@ -89,40 +89,42 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button
-              onClick={() => navigate('/trade')}
-              className="btn btn-primary"
-              style={{ width: '100%', padding: '12px 14px', fontSize: '0.9rem' }}
+              onClick={() => navigate(isFirstTrade ? '/trade?ticker=AAPL' : '/trade')}
+              className="btn btn-primary btn-full"
+              style={{ padding: '14px 16px', fontSize: '0.95rem', fontWeight: 700 }}
             >
-              {isFirstTrade ? 'Make first practice move' : 'Open trade'}
+              {isFirstTrade ? '♟ Make my first practice move' : '♟ Open trade'}
             </button>
-            <button
-              onClick={() => setLearnOpen(true)}
-              className="btn btn-secondary"
-              style={{ width: '100%', padding: '12px 14px', fontSize: '0.9rem' }}
-            >
-              Learn a concept
-            </button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <button
+                onClick={() => setLearnOpen(true)}
+                className="btn btn-secondary"
+                style={{ width: '100%', padding: '12px 14px', fontSize: '0.86rem' }}
+              >
+                Learn a concept
+              </button>
+              <button
+                onClick={() => navigate('/mentor', {
+                  state: {
+                    suggestedPrompt: isFirstTrade
+                      ? 'I am brand new. Help me choose a simple first practice move and explain why.'
+                      : 'Help me decide what deserves my attention today.',
+                  },
+                })}
+                className="btn btn-ghost"
+                style={{ width: '100%', padding: '12px 14px', fontSize: '0.86rem' }}
+              >
+                Ask Alpha first
+              </button>
+            </div>
             <button
               onClick={() => startTour(0)}
-              className="btn btn-ghost"
-              style={{ width: '100%', padding: '12px 14px', fontSize: '0.86rem' }}
+              className="btn btn-ghost btn-full"
+              style={{ padding: '10px 14px', fontSize: '0.82rem', color: 'var(--text-muted)' }}
             >
-              Take the tour
-            </button>
-            <button
-              onClick={() => navigate('/mentor', {
-                state: {
-                  suggestedPrompt: isFirstTrade
-                    ? 'I am brand new. Help me choose a simple first practice move and explain why.'
-                    : 'Help me decide what deserves my attention today.',
-                },
-              })}
-              className="btn btn-ghost"
-              style={{ width: '100%', padding: '12px 14px', fontSize: '0.86rem' }}
-            >
-              Ask Alpha first
+              Take the guided tour ↗
             </button>
           </div>
 
