@@ -24,6 +24,12 @@ declare global {
 
 async function callAI(messages: Array<{ role: string; content: string }>): Promise<string> {
   try {
+    if (!window.puter?.ai?.chat) {
+      throw new Error(
+        'Puter AI SDK is not available. Load https://js.puter.com/v2/ before using mentor features.'
+      );
+    }
+
     const response = await window.puter.ai.chat(messages, { model: 'claude-opus-4-5' });
     const content = response?.message?.content;
     if (!content) throw new Error('Empty AI response');
