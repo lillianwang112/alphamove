@@ -48,9 +48,40 @@ function makeMessageId(): string {
   return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
+const LS_KEY = 'alphamove_conversations';
+
+function loadConversationsFromStorage(): Map<string, MentorConversation> {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return new Map();
+    const arr = JSON.parse(raw) as MentorConversation[];
+    return new Map(arr.map((c) => [c.id, c]));
+  } catch {
+    return new Map();
+  }
+}
+
+function saveConversationsToStorage(conversations: Map<string, MentorConversation>) {
+  try {
+    const arr = Array.from(conversations.values()).slice(-20); // keep last 20
+    localStorage.setItem(LS_KEY, JSON.stringify(arr));
+  } catch {
+    // localStorage quota — ignore
+  }
+}
+
 export function useMentor() {
-  const [conversations, setConversations] = useState<Map<string, MentorConversation>>(new Map());
+  const [conversations, setConversations] = useState<Map<string, MentorConversation>>(() => loadConversationsFromStorage());
   const [loadingConvId, setLoadingConvId] = useState<string | null>(null);
+
+  // Persist conversations to localStorage on every change
+  const setAndPersist = useCallback((updater: (prev: Map<string, MentorConversation>) => Map<string, MentorConversation>) => {
+    setConversations((prev) => {
+      const next = updater(prev);
+      saveConversationsToStorage(next);
+      return next;
+    });
+  }, []);
 
   // ─── Start Pre-Trade Chat ────────────────────────
 
@@ -97,7 +128,7 @@ export function useMentor() {
           createdAt: Timestamp.now(),
         };
 
-        setConversations((prev) => new Map(prev).set(convId, conversation));
+        setAndPersist((prev) => new Map(prev).set(convId, conversation));
         return conversation;
       } finally {
         setLoadingConvId(null);
@@ -132,7 +163,7 @@ export function useMentor() {
       };
 
       const updatedMessages = [...conversation.messages, userMessage];
-      setConversations((prev) => {
+      setAndPersist((prev) => {
         const next = new Map(prev);
         next.set(conversationId, { ...conversation, messages: updatedMessages });
         return next;
@@ -164,7 +195,7 @@ export function useMentor() {
           timestamp: Timestamp.now(),
         };
 
-        setConversations((prev) => {
+        setAndPersist((prev) => {
           const next = new Map(prev);
           const conv = next.get(conversationId)!;
           next.set(conversationId, {
@@ -239,7 +270,7 @@ export function useMentor() {
         messages: [],
         createdAt: Timestamp.now(),
       };
-      setConversations((prev) => new Map(prev).set(convId, conv));
+      setAndPersist((prev) => new Map(prev).set(convId, conv));
       return conv;
     },
     []

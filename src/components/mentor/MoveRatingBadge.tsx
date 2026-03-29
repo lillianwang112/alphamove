@@ -65,6 +65,7 @@ const RATING_CONFIG: Record<MoveRating, {
 
 export default function MoveRatingBadge({ rating, xpEarned }: MoveRatingBadgeProps) {
   const config = RATING_CONFIG[rating];
+  const isExtreme = rating === 'brilliant' || rating === 'blunder';
 
   return (
     <div
@@ -73,11 +74,11 @@ export default function MoveRatingBadge({ rating, xpEarned }: MoveRatingBadgePro
         flexDirection: 'column',
         alignItems: 'center',
         gap: '12px',
+        animation: isExtreme ? 'screenShake 0.4s ease 0.7s both' : 'none',
       }}
     >
       {/* Main badge */}
       <div
-        className="move-rating-enter"
         style={{
           '--rating-color': config.borderColor,
           display: 'flex',
@@ -91,6 +92,7 @@ export default function MoveRatingBadge({ rating, xpEarned }: MoveRatingBadgePro
           boxShadow: `0 0 32px ${config.borderColor}, 0 4px 16px rgba(0,0,0,0.3)`,
           minWidth: '200px',
           textAlign: 'center',
+          animation: 'moveRatingSlam 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, ratingGlow 2s ease-in-out 1s infinite',
         } as React.CSSProperties}
       >
         {/* Icon */}

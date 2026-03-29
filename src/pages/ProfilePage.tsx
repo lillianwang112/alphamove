@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useXP } from '../hooks/useXP';
 import { usePortfolio } from '../hooks/usePortfolio';
@@ -9,8 +9,10 @@ import { getChessPiece } from '../components/leveling/LevelBadge';
 import TourAnchor from '../components/guidance/TourAnchor';
 import { useEffect } from 'react';
 import type { XPEvent } from '../types';
-import { getPositions, removePosition, updateUserData } from '../services/portfolioService';
+import { Timestamp } from 'firebase/firestore';
+import { getPositions, removePosition, addOrUpdatePosition, updateUserData } from '../services/portfolioService';
 import { getCachedXPHistory } from '../services/xpService';
+import { invalidatePortfolioCache } from '../hooks/usePortfolio';
 
 function getLevelColor(level: number): string {
   if (level <= 2) return '#64748B';
@@ -32,6 +34,9 @@ export default function ProfilePage() {
   const [newCapital, setNewCapital] = useState('');
   const [capitalError, setCapitalError] = useState('');
   const [resetting, setResetting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -98,6 +103,78 @@ export default function ProfilePage() {
     }
   };
 
+  const handleDemoSeed = async () => {
+    if (!user) return;
+    setSeeding(true);
+    try {
+      // Clear existing positions
+      const existing = await getPositions(user.uid);
+      await Promise.all(existing.map((p) => removePosition(user.uid, p.id)));
+
+      // Seed demo positions: AAPL (5 shares @ $175), NVDA (2 shares @ $480), MSFT (3 shares @ $415)
+      const demoPositions = [
+        { ticker: 'AAPL', companyName: 'Apple Inc.', shares: 5, avgCostBasis: 175, currentPrice: 189.5, marketValue: 947.5, totalReturn: 72.5, totalReturnPct: 0.0829 },
+        { ticker: 'NVDA', companyName: 'NVIDIA Corp.', shares: 2, avgCostBasis: 480, currentPrice: 875.4, marketValue: 1750.8, totalReturn: 790.8, totalReturnPct: 0.8237 },
+        { ticker: 'MSFT', companyName: 'Microsoft Corp.', shares: 3, avgCostBasis: 415, currentPrice: 432.6, marketValue: 1297.8, totalReturn: 52.8, totalReturnPct: 0.0424 },
+      ];
+
+      const startingCapital = user.startingCapital || 500;
+      const totalInvested = 5 * 175 + 2 * 480 + 3 * 415;
+      const cashLeft = startingCapital > totalInvested ? startingCapital - totalInvested : 180;
+
+      for (const pos of demoPositions) {
+        await addOrUpdatePosition(user.uid, {
+          ...pos,
+          openedAt: Timestamp.fromDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),
+        });
+      }
+
+      // Set demo user stats
+      await updateUserData(user.uid, {
+        currentCash: cashLeft,
+        xp: 180,
+        level: 1,
+        xpToNextLevel: 20,
+        totalTrades: 3,
+        streak: 3,
+        lastActiveAt: Timestamp.now(),
+      });
+      await updateUser({ currentCash: cashLeft, xp: 180, level: 1, xpToNextLevel: 20, totalTrades: 3, streak: 3 });
+
+      // Pre-generate morning brief in localStorage
+      const demoBrief = {
+        greeting: 'Good morning! Here\'s what moved while you slept.',
+        portfolioSummary: 'NVDA surged 4.2% on strong AI chip demand data. AAPL held steady near all-time highs. MSFT gained 1.1% on Azure cloud growth. Your portfolio is up $87 overnight.',
+        newsEvents: [
+          { headline: 'NVIDIA Q4 earnings beat by 18%', whyItMatters: 'Your 2 NVDA shares are up 82% — the AI thesis is playing out exactly as expected.', actionToConsider: 'Consider whether to take some profit or let it run.' },
+          { headline: 'Apple supply chain stabilizes in Asia', whyItMatters: 'Removes a key risk for your AAPL position entering Q1.', actionToConsider: 'No action needed — this is a positive signal.' },
+        ],
+        dailyQuestion: 'Your NVDA is up 82% since you bought it. At what point would you take some profit? That\'s called a "price target" — having one before a stock runs up helps you avoid greed.',
+      };
+      localStorage.setItem('alphamove_demo_brief', JSON.stringify(demoBrief));
+      invalidatePortfolioCache(user.uid);
+
+      alert('Demo portfolio seeded! AAPL (5 shares), NVDA (2 shares), MSFT (3 shares). XP set to 180 (close to Level 2). Refresh the app to see the changes.');
+    } catch (err) {
+      console.error('Demo seed error:', err);
+      alert('Seed failed — check console');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const handleBadgeTap = () => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 800);
+    if (tapCountRef.current >= 3) {
+      tapCountRef.current = 0;
+      if (window.confirm('🌱 Seed demo portfolio?\n\nThis will populate AAPL, NVDA, MSFT positions and set XP to 180. Existing positions will be cleared.')) {
+        void handleDemoSeed();
+      }
+    }
+  };
+
   if (!user) return null;
 
   const level = user.level ?? 1;
@@ -119,8 +196,9 @@ export default function ProfilePage() {
           animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both',
         }}
       >
-        {/* Avatar — chess piece for level */}
+        {/* Avatar — chess piece for level (triple-tap to seed demo) */}
         <div
+          onClick={handleBadgeTap}
           style={{
             width: '64px',
             height: '64px',
@@ -134,6 +212,9 @@ export default function ProfilePage() {
             flexShrink: 0,
             boxShadow: `0 0 24px ${levelColor}50`,
             gap: '1px',
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent',
+            userSelect: 'none',
           }}
         >
           <span style={{ fontSize: '1.75rem', lineHeight: 1, color: 'white', WebkitTextStroke: '0.5px rgba(255,255,255,0.5)' }}>
@@ -142,6 +223,9 @@ export default function ProfilePage() {
           <span style={{ fontSize: '0.58rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'white', opacity: 0.85 }}>
             LVL {level}
           </span>
+          {seeding && (
+            <span style={{ position: 'absolute', fontSize: '0.5rem', color: 'var(--accent)', bottom: '-14px', whiteSpace: 'nowrap' }}>seeding...</span>
+          )}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>

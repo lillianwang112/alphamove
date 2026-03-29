@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './styles/globals.css';
 import './styles/animations.css';
 
@@ -128,6 +128,42 @@ function LoadingScreen() {
   );
 }
 
+function PageTransition({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const [displayLocation, setDisplayLocation] = useState(location);
+  const [transitionStage, setTransitionStage] = useState<'enter' | 'exit'>('enter');
+  const prevKey = useRef(location.pathname);
+
+  useEffect(() => {
+    if (location.pathname !== prevKey.current) {
+      prevKey.current = location.pathname;
+      setTransitionStage('exit');
+      const t = setTimeout(() => {
+        setDisplayLocation(location);
+        setTransitionStage('enter');
+      }, 120);
+      return () => clearTimeout(t);
+    }
+  }, [location]);
+
+  return (
+    <div
+      key={displayLocation.pathname}
+      style={{
+        opacity: transitionStage === 'enter' ? 1 : 0,
+        transform: transitionStage === 'enter' ? 'translateY(0)' : 'translateY(6px)',
+        transition: 'opacity 0.25s ease, transform 0.25s ease',
+        minHeight: 0,
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function AuthGate() {
   const { user, loading, signIn, signInAsGuest, updateUser, isGuest } = useAuth();
   const [wizardDone, setWizardDone] = useState(false);
@@ -178,14 +214,16 @@ function AuthGate() {
   return (
     <div className="app-container">
       <AppShell user={user} isGuest={isGuest} onSignIn={signIn}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/portfolio" element={<PortfolioPage />} />
-          <Route path="/trade" element={<TradePage />} />
-          <Route path="/mentor" element={<MentorPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <PageTransition>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/trade" element={<TradePage />} />
+            <Route path="/mentor" element={<MentorPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </PageTransition>
       </AppShell>
     </div>
   );

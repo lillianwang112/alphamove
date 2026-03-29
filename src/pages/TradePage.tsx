@@ -13,6 +13,7 @@ import TradeForm from '../components/trade/TradeForm';
 import MentorChat from '../components/mentor/MentorChat';
 import TradeConfirmation from '../components/trade/TradeConfirmation';
 import PostTradeCard from '../components/mentor/PostTradeCard';
+import LevelUpModal from '../components/leveling/LevelUpModal';
 import TourAnchor from '../components/guidance/TourAnchor';
 import LearnSheet from '../components/guidance/LearnSheet';
 import AssetClassSelector from '../components/trade/AssetClassSelector';
@@ -117,6 +118,7 @@ export default function TradePage() {
   // Post-trade
   const [postTradeResult, setPostTradeResult] = useState<PostTradeResult | null>(null);
   const [learnOpen, setLearnOpen] = useState(false);
+  const [levelUpData, setLevelUpData] = useState<{ newLevel: number } | null>(null);
 
   const loadQuote = useCallback(async (sym: string, act: TradeAction, name?: string, cls?: AssetClass) => {
     setQuoteLoading(true);
@@ -448,13 +450,17 @@ export default function TradePage() {
       });
 
       // Award XP
-      await awardXP({
+      const xpResult = await awardXP({
         uid: user.uid,
         source: 'trade_outcome',
         amount: analysis.xpEarned,
         reason: `${analysis.moveRating} move on ${ticker}`,
         tradeId: trade.id,
       });
+
+      if (xpResult.leveledUp) {
+        setLevelUpData({ newLevel: xpResult.newLevel });
+      }
 
       setStep('post_trade');
 
@@ -1014,6 +1020,14 @@ export default function TradePage() {
           });
         }}
       />
+
+      {/* Level up celebration modal */}
+      {levelUpData && (
+        <LevelUpModal
+          newLevel={levelUpData.newLevel}
+          onDismiss={() => setLevelUpData(null)}
+        />
+      )}
     </div>
   );
 }

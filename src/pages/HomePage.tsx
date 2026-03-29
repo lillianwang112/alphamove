@@ -1,8 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { useNewsBrief } from '../hooks/useNewsBrief';
+import { useTrade } from '../hooks/useTrade';
 import { useGuidance } from '../context/GuidanceContext';
 import MorningBrief from '../components/brief/MorningBrief';
 import PortfolioSummary from '../components/portfolio/PortfolioSummary';
@@ -10,7 +11,6 @@ import XPBar from '../components/leveling/XPBar';
 import SkillsBar from '../components/leveling/SkillsBar';
 import TourAnchor from '../components/guidance/TourAnchor';
 import LearnSheet from '../components/guidance/LearnSheet';
-import { useState } from 'react';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -22,8 +22,10 @@ export default function HomePage() {
     portfolio,
     user?.level ?? 1
   );
+  const { fetchRecentTrades } = useTrade();
   const requestedBriefRef = useRef(false);
   const [learnOpen, setLearnOpen] = useState(false);
+  const [sparklineData, setSparklineData] = useState<number[]>([]);
   // Extract daily question from brief — available for levels 1-5
   const dailyQuestion = (user?.level ?? 1) <= 5
     ? (brief as unknown as { dailyQuestion?: string })?.dailyQuestion ?? null
@@ -44,6 +46,36 @@ export default function HomePage() {
     requestedBriefRef.current = true;
     void generateIfMissing();
   }, [portfolioLoading, briefLoading, portfolio, generateIfMissing]);
+
+  // Generate sparkline from trades + current portfolio value
+  useEffect(() => {
+    if (!user?.uid || portfolioLoading || !portfolio) return;
+    fetchRecentTrades(user.uid, 20)
+      .then((trades) => {
+        if (trades.length === 0) {
+          setSparklineData([portfolio.totalValue]);
+          return;
+        }
+        const sorted = [...trades].sort((a, b) => {
+          const tA = a.executedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
+          const tB = b.executedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
+          return tA - tB;
+        });
+        // Build cumulative portfolio value history from starting capital
+        let runningValue = user.startingCapital;
+        const points: number[] = [runningValue];
+        for (const trade of sorted) {
+          if (trade.action === 'buy') runningValue -= trade.totalValue;
+          else runningValue += trade.totalValue;
+          // Add a slight drift to make the chart look natural
+          points.push(Math.max(0, runningValue + (portfolio.totalValue - runningValue) * 0.3));
+        }
+        // End at current total value
+        points.push(portfolio.totalValue);
+        setSparklineData(points);
+      })
+      .catch(() => {});
+  }, [user?.uid, user?.startingCapital, portfolioLoading, portfolio, fetchRecentTrades]);
 
   return (
     <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -304,6 +336,107 @@ export default function HomePage() {
         Make a Move
       </button>
 
+      {/* Suggested Moves */}
+      {!portfolioLoading && portfolio && (() => {
+        const suggestions: { icon: string; label: string; sub: string; ticker?: string; action?: string; color: string }[] = [];
+
+        if (portfolio.positions.length === 0) {
+          suggestions.push({
+            icon: '♟',
+            label: 'Ready for your first move?',
+            sub: 'Tap to start with a stock you know',
+            ticker: 'AAPL',
+            color: 'var(--accent)',
+          });
+        } else {
+          // Take profit on a big winner
+          const bigWinner = [...portfolio.positions].find((p) => p.totalReturnPct > 0.1);
+          if (bigWinner) {
+            suggestions.push({
+              icon: '↗',
+              label: `Take profit on ${bigWinner.ticker}?`,
+              sub: `Up ${(bigWinner.totalReturnPct * 100).toFixed(1)}% — consider your exit`,
+              ticker: bigWinner.ticker,
+              action: 'sell',
+              color: 'var(--success)',
+            });
+          }
+          // Diversify from concentration
+          const topPos = [...portfolio.positions].sort((a, b) => b.marketValue - a.marketValue)[0];
+          if (topPos && (topPos.marketValue / portfolio.totalValue) > 0.5) {
+            suggestions.push({
+              icon: '◈',
+              label: `Diversify from ${topPos.ticker}?`,
+              sub: `${((topPos.marketValue / portfolio.totalValue) * 100).toFixed(0)}% concentrated — explore another sector`,
+              color: '#F59E0B',
+            });
+          }
+          // Cash sitting idle
+          const cashPct = (portfolio.totalValue - portfolio.totalInvested) / portfolio.totalValue;
+          if (cashPct > 0.6 && portfolio.positions.length > 0) {
+            suggestions.push({
+              icon: '💡',
+              label: 'Cash sitting idle',
+              sub: `${(cashPct * 100).toFixed(0)}% uninvested — consider your next move`,
+              color: 'var(--accent)',
+            });
+          }
+        }
+
+        if (suggestions.length === 0) return null;
+
+        return (
+          <div style={{ animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both', animationDelay: '0.12s' }}>
+            <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+              Suggested Moves
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    if (s.ticker && s.action) {
+                      navigate(`/trade?ticker=${s.ticker}&action=${s.action}`);
+                    } else if (s.ticker) {
+                      navigate(`/trade?ticker=${s.ticker}`);
+                    } else {
+                      navigate('/trade');
+                    }
+                  }}
+                  style={{
+                    background: 'var(--surface)',
+                    border: `1px solid ${s.color}30`,
+                    borderLeft: `3px solid ${s.color}`,
+                    borderRadius: 'var(--radius-md)',
+                    padding: '12px 14px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '10px',
+                    cursor: 'pointer',
+                    width: '100%',
+                    textAlign: 'left',
+                    WebkitTapHighlightColor: 'transparent',
+                    transition: 'transform 0.15s ease, background 0.15s ease',
+                  }}
+                  onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
+                  onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1rem', color: s.color, flexShrink: 0 }}>{s.icon}</span>
+                    <div>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{s.label}</p>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, marginTop: '2px' }}>{s.sub}</p>
+                    </div>
+                  </div>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', flexShrink: 0 }}>→</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Portfolio summary */}
       {!portfolioLoading && portfolio && (
         <div style={{ animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both', animationDelay: '0.15s' }}>
@@ -329,7 +462,7 @@ export default function HomePage() {
               This is your current position: what you own, what cash is still free, and how your practice account is changing.
             </p>
           )}
-          <PortfolioSummary portfolio={portfolio} />
+          <PortfolioSummary portfolio={portfolio} sparklineData={sparklineData} />
         </div>
       )}
 

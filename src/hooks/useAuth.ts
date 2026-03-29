@@ -44,6 +44,27 @@ export function useAuth() {
             lastActiveAt: Timestamp.now(),
           };
           await updateUserData(fbUser.uid, userData);
+        } else {
+          // Streak logic: increment if last active was yesterday, reset if older
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const lastActive = userData.lastActiveAt?.toDate?.() ?? new Date(0);
+          const lastActiveDay = new Date(lastActive.getFullYear(), lastActive.getMonth(), lastActive.getDate());
+          const daysDiff = Math.round((today.getTime() - lastActiveDay.getTime()) / (1000 * 60 * 60 * 24));
+
+          let newStreak = userData.streak ?? 0;
+          if (daysDiff === 1) {
+            newStreak = newStreak + 1;
+          } else if (daysDiff > 1) {
+            newStreak = 1;
+          }
+          // daysDiff === 0 means same day → no change
+
+          if (daysDiff >= 1) {
+            const streakUpdates = { streak: newStreak, lastActiveAt: Timestamp.now() };
+            await updateUserData(fbUser.uid, streakUpdates);
+            userData = { ...userData, ...streakUpdates };
+          }
         }
         _cachedUser = userData;
         setUser(userData);
