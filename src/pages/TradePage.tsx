@@ -183,8 +183,10 @@ export default function TradePage() {
     await loadQuote(symbol, 'buy', name);
   };
 
-  const handleBuy = () => { setAction('buy'); setThesis(''); setThesisScores(null); setStep('thesis_input'); };
-  const handleSell = () => { setAction('sell'); setThesis(''); setThesisScores(null); setStep('thesis_input'); };
+  const needsThesis = beginnerMode && tradeMode === 'learning';
+
+  const handleBuy = () => { setAction('buy'); setThesis(''); setThesisScores(null); setStep(needsThesis ? 'thesis_input' : 'trade_form'); };
+  const handleSell = () => { setAction('sell'); setThesis(''); setThesisScores(null); setStep(needsThesis ? 'thesis_input' : 'trade_form'); };
 
   const handleThesisSubmit = async (text: string) => {
     setThesis(text);
