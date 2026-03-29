@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlphaMove — Pitch Deck</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0A0A0F;
+      --surface: #14141F;
+      --surface2: #1C1C2E;
+      --primary: #6366F1;
+      --primary-glow: rgba(99,102,241,0.25);
+      --green: #22C55E;
+      --red: #EF4444;
+      --amber: #F59E0B;
+      --teal: #26C2A3;
+      --text: #F8FAFC;
+      --muted: #94A3B8;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* ── Slide container ── */
+    .deck {
+      width: 100%; height: 100%;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 80px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      pointer-events: none;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+    .slide.exit {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Nav ── */
+    .nav {
+      position: fixed;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 100;
+    }
+    .nav button {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 24px;
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .nav button:hover { background: var(--primary); border-color: var(--primary); }
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.2s, width 0.2s;
+    }
+    .dot.active {
+      background: var(--primary);
+      width: 18px;
+      border-radius: 4px;
+    }
+    .slide-num {
+      position: fixed;
+      top: 24px; right: 36px;
+      font-size: 13px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Typography ── */
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+    h1 { font-size: clamp(36px, 5vw, 64px); font-weight: 700; line-height: 1.1; }
+    h2 { font-size: clamp(28px, 3.5vw, 48px); font-weight: 700; line-height: 1.15; }
+    h3 { font-size: clamp(18px, 2vw, 26px); font-weight: 600; line-height: 1.3; }
+    p, li { font-size: clamp(15px, 1.4vw, 18px); line-height: 1.65; color: var(--muted); }
+    strong { color: var(--text); font-weight: 600; }
+    .accent { color: var(--primary); }
+    .green { color: var(--green); }
+    .amber { color: var(--amber); }
+    .teal { color: var(--teal); }
+
+    /* ── Cards / surfaces ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 32px;
+    }
+    .card-sm {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 24px;
+    }
+
+    /* ── Grid helpers ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 100%; }
+    .col { display: flex; flex-direction: column; gap: 12px; }
+    .row { display: flex; gap: 16px; align-items: center; }
+
+    /* ── Specific slide elements ── */
+    .logo-mark {
+      font-size: 52px; font-weight: 700;
+      background: linear-gradient(135deg, #6366F1, #818CF8, #26C2A3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .tagline {
+      font-size: clamp(18px, 2vw, 24px);
+      color: var(--muted);
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .badge-brilliant { background: rgba(38,194,163,0.15); color: var(--teal); border: 1px solid rgba(38,194,163,0.3); }
+    .badge-great     { background: rgba(99,102,241,0.15); color: #818CF8; border: 1px solid rgba(99,102,241,0.3); }
+    .badge-good      { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .badge-mistake   { background: rgba(249,115,22,0.15); color: #F97316; border: 1px solid rgba(249,115,22,0.3); }
+    .badge-blunder   { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+
+    .chat-bubble {
+      max-width: 80%;
+      padding: 14px 18px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+    .bubble-mentor {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      align-self: flex-start;
+      border-radius: 4px 18px 18px 18px;
+    }
+    .bubble-user {
+      background: var(--primary);
+      color: white;
+      align-self: flex-end;
+      border-radius: 18px 18px 4px 18px;
+    }
+    .chat-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+    }
+    .avatar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366F1, #26C2A3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: white;
+    }
+
+    .stat-num {
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 700;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .xp-bar-track {
+      width: 100%;
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #818CF8);
+      border-radius: 4px;
+      transition: width 1s ease;
+    }
+
+    .level-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .level-row:last-child { border-bottom: none; }
+    .level-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+    .level-dot.done { background: var(--primary); }
+    .level-dot.current { background: var(--amber); box-shadow: 0 0 0 3px rgba(245,158,11,0.2); }
+
+    .vs-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .vs-table th {
+      padding: 10px 14px;
+      text-align: left;
+      color: var(--muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .vs-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .vs-table tr:last-child td { border-bottom: none; }
+    .vs-table td.highlight { color: var(--text); font-weight: 600; }
+    .check { color: var(--green); }
+    .cross { color: var(--red); }
+
+    .pill {
+      display: inline-flex;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(99,102,241,0.15);
+      color: var(--primary);
+      border: 1px solid rgba(99,102,241,0.25);
+    }
+
+    .glow-box {
+      border: 1px solid rgba(99,102,241,0.4);
+      box-shadow: 0 0 40px rgba(99,102,241,0.12), inset 0 0 40px rgba(99,102,241,0.04);
+    }
+
+    .price-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    .step-num {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    ul.check-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    ul.check-list li::before {
+      content: '✦ ';
+      color: var(--primary);
+    }
+
+    /* Slide-specific layouts */
+    .slide-title { text-align: center; gap: 0; }
+    .slide-title .logo-mark { margin-bottom: 8px; }
+
+    .full-width { width: 100%; }
+    .center { text-align: center; align-items: center; }
+
+    /* Animated glow on title slide */
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 60px rgba(99,102,241,0.15); }
+      50% { box-shadow: 0 0 100px rgba(99,102,241,0.30); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ─── SLIDE 1: TITLE ─── -->
+  <div class="slide active slide-title center" data-slide="1">
+    <div class="eyebrow">Introducing</div>
+    <div class="logo-mark">AlphaMove</div>
+    <p class="tagline">Chess.com meets Duolingo — for investing</p>
+    <div style="margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+      <span class="pill">AI Mentor</span>
+      <span class="pill">Real Market Data</span>
+      <span class="pill">Paper Trading</span>
+      <span class="pill">Gen Z Investors</span>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 2: THE PROBLEM ─── -->
+  <div class="slide" data-slide="2">
+    <div class="eyebrow">The Problem</div>
+    <h2 style="margin-bottom: 32px;">Beginners don't lack information.<br/><strong>They lack judgment.</strong></h2>
+    <div class="grid-2" style="gap: 20px;">
+      <div class="card">
+        <div class="stat-num amber" style="font-size: 48px;">58%</div>
+        <p style="margin-top: 8px;">of Gen Z <strong>wants to invest</strong> but doesn't know how<br/><span style="font-size: 13px; color: var(--muted);">Schwab 2024</span></p>
+      </div>
+      <div class="card">
+        <div class="stat-num" style="color: var(--red); font-size: 48px;">$100K</div>
+        <p style="margin-top: 8px;">Fake capital simulators <strong>teach fake lessons</strong>. Managing $500 is a completely different skill.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 20px; width: 100%; border-color: rgba(99,102,241,0.3);">
+      <p><strong>Every existing tool</strong> gives you data or fake money — none of them make you <strong>think before you trade.</strong> There's no chess engine for your portfolio.</p>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 3: THE SOLUTION ─── -->
+  <div class="slide" data-slide="3">
+    <div class="eyebrow">The Solution</div>
+    <h2 style="margin-bottom: 28px; text-align: center;">An AI mentor woven into<br/><strong class="accent">every single trade</strong></h2>
+    <div class="grid-3">
+      <div class="card col">
+        <div style="font-size: 28px;">🎯</div>
+        <h3>Pre-Trade</h3>
+        <p>Socratic questioning forces you to articulate your thesis <em>before</em> you execute.</p>
+      </div>
+      <div class="card col" style="border-color: rgba(99,102,241,0.4); box-shadow: 0 0 30px rgba(99,102,241,0.08);">
+        <div style="font-size: 28px;">♟️</div>
+        <h3>Chess Engine</h3>
+        <p>Every move gets rated: <span class="teal">Brilliant</span>, <span class="green">Good</span>, <span class="amber">Inaccuracy</span>, <span style="color: var(--red);">Blunder</span>.</p>
+      </div>
+      <div class="card col">
+        <div style="font-size: 28px;">☀️</div>
+        <h3>Morning Brief</h3>
+        <p>Real news connected to <em>your</em> specific holdings, in plain English.</p>
+      </div>
+    </div>
+    <div style="margin-top: 20px; text-align: center;">
+      <p><strong>XP rewards reasoning quality — not returns.</strong> A bad trade with great thinking earns more than a lucky trade with no thesis.</p>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 4: DEMO — PRE-TRADE ─── -->
+  <div class="slide" data-slide="4">
+    <div class="eyebrow" style="align-self: flex-start;">Demo · Pre-Trade Mentor</div>
+    <div class="grid-2" style="align-items: center;">
+      <div class="col">
+        <h2 style="margin-bottom: 8px;">Socratic investing</h2>
+        <p>Alpha doesn't tell you what to buy. It makes you <strong>think before you trade.</strong></p>
+        <div style="margin-top: 16px;" class="col">
+          <div class="row">
+            <div class="step-num">1</div>
+            <p>Search any real stock — live Finnhub data</p>
+          </div>
+          <div class="row">
+            <div class="step-num">2</div>
+            <p>Alpha asks: <em>"What's your thesis?"</em></p>
+          </div>
+          <div class="row">
+            <div class="step-num">3</div>
+            <p>2–4 Socratic exchanges build your reasoning</p>
+          </div>
+          <div class="row">
+            <div class="step-num">4</div>
+            <p>Confirm — and the chess engine fires</p>
+          </div>
+        </div>
+      </div>
+      <div class="card col" style="gap: 0;">
+        <div class="avatar-row">
+          <div class="avatar">α</div>
+          <span style="font-size: 13px; font-weight: 600;">Alpha</span>
+        </div>
+        <div class="chat-stack">
+          <div class="chat-bubble bubble-user">I want to buy 3 shares of AAPL</div>
+          <div class="chat-bubble bubble-mentor">Solid start — Apple is a familiar name. But <strong>familiarity isn't a thesis</strong>. What do you believe Apple will do in the next 6 months that the market hasn't priced in yet?</div>
+          <div class="chat-bubble bubble-user">Their iPhone 17 cycle looks strong and services revenue keeps growing</div>
+          <div class="chat-bubble bubble-mentor">Now that's a thesis. One check: this puts <strong>40% of your portfolio in one stock</strong>. What's your plan if it drops 10%?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 5: DEMO — CHESS ENGINE ─── -->
+  <div class="slide" data-slide="5">
+    <div class="eyebrow" style="align-self: flex-start;">Demo · Post-Trade Chess Engine</div>
+    <div class="grid-2" style="align-items: start;">
+      <div class="col">
+        <h2>Every move rated.<br/><strong>Instantly.</strong></h2>
+        <p style="margin-top: 12px;">Powered by Claude. Analyzes your thesis against real news, portfolio context, and risk management — not just whether the price went up.</p>
+        <div style="margin-top: 24px; display: flex; flex-wrap: wrap; gap: 10px;">
+          <span class="badge badge-brilliant">✦ Brilliant · 100 XP</span>
+          <span class="badge badge-great">▲ Great · 75 XP</span>
+          <span class="badge badge-good">● Good · 50 XP</span>
+          <span class="badge badge-mistake">▼ Mistake · 15 XP</span>
+          <span class="badge badge-blunder">?? Blunder · 5 XP</span>
+        </div>
+      </div>
+      <div class="card glow-box col" style="gap: 16px;">
+        <div class="row" style="justify-content: space-between;">
+          <span style="font-size: 13px; color: var(--muted);">AAPL · 3 shares · BUY</span>
+          <span class="badge badge-good">● Good Move</span>
+        </div>
+        <div style="border-top: 1px solid var(--border); padding-top: 16px;">
+          <p style="font-size: 14px; color: var(--text);">"Solid thesis grounded in product cycle and services growth. You correctly identified a near-term catalyst. Watch: this concentrates 40% of your portfolio in one stock — consider diversifying your next move."</p>
+        </div>
+        <div style="border-top: 1px solid var(--border); padding-top: 12px;">
+          <p style="font-size: 13px; color: var(--muted);">XP Earned</p>
+          <div class="row" style="margin-top: 6px; justify-content: space-between;">
+            <span style="font-family: 'JetBrains Mono'; color: var(--amber); font-size: 22px; font-weight: 700;">+50 XP</span>
+            <span style="font-size: 13px; color: var(--muted);">Level 1 → 50 / 200 XP</span>
+          </div>
+          <div class="xp-bar-track" style="margin-top: 8px;">
+            <div class="xp-bar-fill" style="width: 25%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 6: LEVELING ─── -->
+  <div class="slide" data-slide="6">
+    <div class="eyebrow" style="align-self: flex-start;">The Leveling System</div>
+    <div class="grid-2">
+      <div class="col">
+        <h2>Earn XP for<br/><strong>thinking well</strong></h2>
+        <p style="margin-top: 8px;">Not for making money. A brilliant thesis that loses earns more XP than a lucky trade with no reasoning.</p>
+        <div class="card" style="margin-top: 20px;">
+          <p style="font-size: 13px; color: var(--muted); margin-bottom: 12px;">AS YOUR LEVEL GROWS...</p>
+          <div class="row" style="margin-bottom: 8px;">
+            <span style="font-size: 20px;">🎓</span>
+            <p>The mentor gets <strong>quieter</strong> — you lead, Alpha comments</p>
+          </div>
+          <div class="row" style="margin-bottom: 8px;">
+            <span style="font-size: 20px;">🔓</span>
+            <p><strong>New features</strong> unlock: charts, watchlist, earnings calendar</p>
+          </div>
+          <div class="row">
+            <span style="font-size: 20px;">🏆</span>
+            <p>Level 10 = <strong>"Ready for a real brokerage"</strong> badge</p>
+          </div>
+        </div>
+      </div>
+      <div class="card col" style="gap: 4px; padding: 20px 24px;">
+        <div class="level-row">
+          <div class="level-dot done"></div>
+          <div style="flex: 1;"><strong style="font-size: 14px;">Lv 1</strong> <span style="color: var(--muted); font-size: 13px;">Paper Rookie</span></div>
+          <span style="font-size: 12px; color: var(--muted);">0 XP</span>
+        </div>
+        <div class="level-row">
+          <div class="level-dot current"></div>
+          <div style="flex: 1;"><strong style="font-size: 14px; color: var(--amber);">Lv 2</strong> <span style="color: var(--muted); font-size: 13px;">Market Observer</span></div>
+          <span style="font-size: 12px; color: var(--muted);">200 XP</span>
+        </div>
+        <div class="level-row">
+          <div class="level-dot"></div>
+          <div style="flex: 1;"><strong style="font-size: 14px; color: var(--muted);">Lv 3</strong> <span style="color: var(--muted); font-size: 13px;">Thesis Builder</span></div>
+          <span style="font-size: 12px; color: var(--muted);">500 XP</span>
+        </div>
+        <div class="level-row">
+          <div class="level-dot"></div>
+          <div style="flex: 1;"><strong style="font-size: 14px; color: var(--muted);">Lv 5</strong> <span style="color: var(--muted); font-size: 13px;">Pattern Spotter</span></div>
+          <span style="font-size: 12px; color: var(--muted);">1,800 XP</span>
+        </div>
+        <div class="level-row">
+          <div class="level-dot"></div>
+          <div style="flex: 1;"><strong style="font-size: 14px; color: var(--muted);">Lv 8</strong> <span style="color: var(--muted); font-size: 13px;">Market Analyst</span></div>
+          <span style="font-size: 12px; color: var(--muted);">6,500 XP</span>
+        </div>
+        <div class="level-row">
+          <div class="level-dot"></div>
+          <div style="flex: 1;"><strong style="font-size: 14px; color: var(--muted);">Lv 10</strong> <span style="color: var(--teal); font-size: 13px;">Graduation 🎓</span></div>
+          <span style="font-size: 12px; color: var(--muted);">12,000 XP</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 7: TECH STACK ─── -->
+  <div class="slide" data-slide="7">
+    <div class="eyebrow" style="align-self: flex-start;">Technical Execution</div>
+    <h2 style="margin-bottom: 28px; align-self: flex-start;">Built on real data.<br/><strong>Real intelligence.</strong></h2>
+    <div class="grid-3">
+      <div class="card col">
+        <div style="font-size: 32px;">🤖</div>
+        <h3>Claude API</h3>
+        <p>Three distinct AI modes: Socratic pre-trade, chess-engine post-trade, morning brief. One coherent mentor persona.</p>
+      </div>
+      <div class="card col">
+        <div style="font-size: 32px;">📈</div>
+        <h3>Finnhub</h3>
+        <p>Real-time quotes, company profiles, live news. 60 API calls/min on free tier. Real stocks, real prices.</p>
+      </div>
+      <div class="card col">
+        <div style="font-size: 32px;">🔥</div>
+        <h3>Firebase</h3>
+        <p>Google Auth, real-time Firestore for portfolio state, XP tracking, trade history.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 20px; width: 100%; border-color: rgba(99,102,241,0.3);">
+      <div class="row" style="justify-content: space-around; flex-wrap: wrap; gap: 16px;">
+        <span class="pill">React PWA</span>
+        <span class="pill">Vite + TypeScript</span>
+        <span class="pill">Mobile-First</span>
+        <span class="pill">Real-Time Prices</span>
+        <span class="pill">Live Claude Integration</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 8: COMPETITIVE LANDSCAPE ─── -->
+  <div class="slide" data-slide="8">
+    <div class="eyebrow">Why Now · Why Us</div>
+    <div class="full-width">
+      <h2 style="margin-bottom: 24px;">The gap nobody fills</h2>
+      <table class="vs-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>AI Mentor</th>
+            <th>Real Budget</th>
+            <th>Move Feedback</th>
+            <th>Leveling</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Investopedia Sim</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗ $100K fake</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+          </tr>
+          <tr>
+            <td>Robinhood</td>
+            <td class="cross">✗</td>
+            <td class="check">✓</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+          </tr>
+          <tr>
+            <td>TryPaperTrade</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗</td>
+          </tr>
+          <tr>
+            <td>Money Masters</td>
+            <td class="cross">✗</td>
+            <td class="cross">✗ Theory only</td>
+            <td class="cross">✗</td>
+            <td class="check">✓</td>
+          </tr>
+          <tr style="background: rgba(99,102,241,0.06);">
+            <td class="highlight">AlphaMove ♟️</td>
+            <td class="check highlight">✓ Always on</td>
+            <td class="check highlight">✓ Your $500</td>
+            <td class="check highlight">✓ Every trade</td>
+            <td class="check highlight">✓ XP + levels</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─── SLIDE 9: CLOSE ─── -->
+  <div class="slide center" data-slide="9">
+    <div class="eyebrow">The One-Sentence Pitch</div>
+    <h1 style="text-align: center; max-width: 760px; line-height: 1.15;">
+      "We built the <span class="accent">chess engine</span><br/>for your portfolio."
+    </h1>
+    <p style="margin-top: 24px; max-width: 560px; text-align: center; font-size: 18px;">
+      An AI mentor that makes you <strong>think before every trade</strong>, rates every move, and levels you up from beginner to investor.
+    </p>
+    <div style="display: flex; gap: 16px; margin-top: 48px; flex-wrap: wrap; justify-content: center;">
+      <div class="card-sm" style="text-align: center; min-width: 140px;">
+        <div class="stat-num" style="font-size: 36px; color: var(--primary);">58%</div>
+        <p style="font-size: 13px;">Gen Z wants to invest</p>
+      </div>
+      <div class="card-sm" style="text-align: center; min-width: 140px;">
+        <div class="stat-num" style="font-size: 36px; color: var(--amber);">$0</div>
+        <p style="font-size: 13px;">Real AI mentor competitors</p>
+      </div>
+      <div class="card-sm" style="text-align: center; min-width: 140px;">
+        <div class="stat-num" style="font-size: 36px; color: var(--green);">3</div>
+        <p style="font-size: 13px;">AI modes in one app</p>
+      </div>
+    </div>
+    <div style="margin-top: 40px;">
+      <div class="logo-mark" style="font-size: 32px;">AlphaMove</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Navigation ── -->
+<div class="nav">
+  <button onclick="prevSlide()">← Prev</button>
+  <div class="dots" id="dots"></div>
+  <button onclick="nextSlide()">Next →</button>
+</div>
+<div class="slide-num" id="slideNum">1 / 9</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  const slideNumEl = document.getElementById('slideNum');
+  let current = 0;
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  });
+
+  function goTo(n) {
+    const prev = current;
+    current = Math.max(0, Math.min(slides.length - 1, n));
+    if (prev === current) return;
+
+    slides[prev].classList.remove('active');
+    slides[prev].classList.add('exit');
+    setTimeout(() => slides[prev].classList.remove('exit'), 500);
+
+    slides[current].classList.add('active');
+
+    document.querySelectorAll('.dot').forEach((d, i) =>
+      d.classList.toggle('active', i === current)
+    );
+    slideNumEl.textContent = `${current + 1} / ${slides.length}`;
+  }
+
+  function nextSlide() { goTo(current + 1); }
+  function prevSlide() { goTo(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') nextSlide();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevSlide();
+  });
+
+  // Touch/swipe
+  let touchX = null;
+  document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 40) dx < 0 ? nextSlide() : prevSlide();
+    touchX = null;
+  });
+</script>
+</body>
+</html>
