@@ -160,7 +160,7 @@ export default function HomePage() {
       <TourAnchor id="home-start">
         <div
           style={{
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(20, 21, 34, 0.96) 62%)',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, var(--surface) 62%)',
             border: '1px solid rgba(99, 102, 241, 0.28)',
             borderRadius: 'var(--radius-xl)',
             padding: '18px 16px',

@@ -91,7 +91,7 @@ export default function FloatingAlpha({ user }: FloatingAlphaProps) {
           left: '50%',
           transform: 'translateX(-50%)',
           width: '100%',
-          maxWidth: '430px',
+          maxWidth: 'var(--app-max-width)',
           pointerEvents: 'none',
           zIndex: 900,
         }}>
