@@ -1,17 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { MorningBrief, Portfolio } from '../types';
-import { getMorningBrief, generateAndSaveMorningBrief } from '../services/newsService';
+import { getMorningBrief, generateAndSaveMorningBrief, getCachedBrief } from '../services/newsService';
 
 export function useNewsBrief(uid: string, portfolio?: Portfolio | null, level?: number) {
-  const [brief, setBrief] = useState<MorningBrief | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [brief, setBrief] = useState<MorningBrief | null>(() => uid ? getCachedBrief(uid) : null);
+  const [loading, setLoading] = useState(() => uid ? !getCachedBrief(uid) : false);
   const [error, setError] = useState<string | null>(null);
 
   const loadBrief = useCallback(async () => {
-    if (!uid) {
-      setLoading(false);
-      return;
-    }
+    if (!uid) { setLoading(false); return; }
+    // If already in sync cache, skip the async fetch
+    const syncCached = getCachedBrief(uid);
+    if (syncCached) { setBrief(syncCached); setLoading(false); return; }
     try {
       setLoading(true);
       setError(null);

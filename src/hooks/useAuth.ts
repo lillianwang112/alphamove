@@ -11,18 +11,23 @@ import { auth, googleProvider } from '../config/firebase';
 import { getUserData, updateUserData } from '../services/portfolioService';
 import type { User } from '../types';
 
+// Module-level cache — survives tab switches within the same session
+let _cachedUser: User | null = null;
+let _cachedFirebaseUser: FirebaseUser | null = null;
+let _authResolved = false;
+
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(_cachedUser);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(_cachedFirebaseUser);
+  const [loading, setLoading] = useState(!_authResolved);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      _cachedFirebaseUser = fbUser;
       setFirebaseUser(fbUser);
       if (fbUser) {
         let userData = await getUserData(fbUser.uid);
         if (!userData) {
-          // Create new user record
           userData = {
             uid: fbUser.uid,
             displayName: fbUser.displayName || (fbUser.isAnonymous ? 'Guest' : 'Investor'),
@@ -40,10 +45,13 @@ export function useAuth() {
           };
           await updateUserData(fbUser.uid, userData);
         }
+        _cachedUser = userData;
         setUser(userData);
       } else {
+        _cachedUser = null;
         setUser(null);
       }
+      _authResolved = true;
       setLoading(false);
     });
 
@@ -71,6 +79,9 @@ export function useAuth() {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
+      _cachedUser = null;
+      _cachedFirebaseUser = null;
+      _authResolved = false;
       setUser(null);
       setFirebaseUser(null);
     } catch (err) {
@@ -82,6 +93,7 @@ export function useAuth() {
   const updateUser = async (updates: Partial<User>): Promise<void> => {
     if (!user) return;
     const updated = { ...user, ...updates };
+    _cachedUser = updated;
     setUser(updated);
     await updateUserData(user.uid, updates);
   };

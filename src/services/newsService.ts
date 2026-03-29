@@ -13,6 +13,11 @@ import { generateMorningBriefAI, buildMorningBrief } from './mentorService';
 // ─── In-memory demo cache ─────────────────────────
 const _briefCache = new Map<string, MorningBrief>();
 
+export function getCachedBrief(uid: string): MorningBrief | null {
+  const key = `${uid}-${new Date().toISOString().split('T')[0]}`;
+  return _briefCache.get(key) ?? null;
+}
+
 // ─── Get Today's Brief ────────────────────────────
 
 export async function getMorningBrief(uid: string): Promise<MorningBrief | null> {
