@@ -3,6 +3,7 @@ import './styles/globals.css';
 import './styles/animations.css';
 
 import { useAuth } from './hooks/useAuth';
+import { GuidanceProvider } from './context/GuidanceContext';
 import AppShell from './components/layout/AppShell';
 import WelcomeScreen from './components/onboarding/WelcomeScreen';
 import CapitalInput from './components/onboarding/CapitalInput';
@@ -140,7 +141,9 @@ export default function App() {
 
   return (
     <Router>
-      <AuthGate />
+      <GuidanceProvider>
+        <AuthGate />
+      </GuidanceProvider>
     </Router>
   );
 }

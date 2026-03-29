@@ -1,16 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMentor } from '../hooks/useMentor';
+import { useGuidance } from '../context/GuidanceContext';
 import MentorChat from '../components/mentor/MentorChat';
+import TourAnchor from '../components/guidance/TourAnchor';
+import LearnSheet from '../components/guidance/LearnSheet';
 import type { MentorMessage, MentorConversation } from '../types';
 import { Timestamp } from 'firebase/firestore';
 
 export default function MentorPage() {
+  const location = useLocation();
   const { user } = useAuth();
+  const { beginnerMode } = useGuidance();
   const { startGeneralChat, sendMessage } = useMentor();
   const [conversation, setConversation] = useState<MentorConversation | null>(null);
   const [messages, setMessages] = useState<MentorMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [learnOpen, setLearnOpen] = useState(false);
+
+  const suggestedPrompt = (location.state as { suggestedPrompt?: string } | null)?.suggestedPrompt ?? null;
 
   // Start a general conversation on mount
   const initConversation = useCallback(() => {
@@ -131,16 +140,59 @@ export default function MentorPage() {
 
       {/* Suggestion chips — shown when chat is fresh */}
       {messages.length <= 1 && !loading && (
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '8px',
-            flexShrink: 0,
-            animation: 'fadeIn 0.4s ease both',
-            animationDelay: '0.2s',
-          }}
-        >
+        <TourAnchor id="mentor-prompts">
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              flexShrink: 0,
+              animation: 'fadeIn 0.4s ease both',
+              animationDelay: '0.2s',
+            }}
+          >
+          {(beginnerMode || suggestedPrompt) && (
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: '16px',
+                padding: '14px 16px',
+              }}
+            >
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: '10px' }}>
+                Ask Alpha when you feel stuck, want a concept translated into plain English, or need help turning an idea into a trade thesis.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {suggestedPrompt && (
+                  <button
+                    onClick={() => handleSend(suggestedPrompt)}
+                    className="btn btn-secondary"
+                    style={{ padding: '10px 12px', fontSize: '0.82rem' }}
+                  >
+                    Use suggested prompt
+                  </button>
+                )}
+                {beginnerMode && (
+                  <button
+                    onClick={() => setLearnOpen(true)}
+                    className="btn btn-ghost"
+                    style={{ padding: '10px 12px', fontSize: '0.82rem' }}
+                  >
+                    Learn first
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+            }}
+          >
           {[
             "What is a P/E ratio?",
             "How do I diversify?",
@@ -177,7 +229,9 @@ export default function MentorPage() {
               {suggestion}
             </button>
           ))}
-        </div>
+          </div>
+          </div>
+        </TourAnchor>
       )}
 
       {/* Chat */}
@@ -188,6 +242,16 @@ export default function MentorPage() {
           loading={loading}
         />
       </div>
+
+      <LearnSheet
+        open={learnOpen}
+        onClose={() => setLearnOpen(false)}
+        initialTopic="thesis"
+        onAskAlpha={(topic) => {
+          setLearnOpen(false);
+          handleSend(`Teach me ${topic} in plain English and give me one beginner example.`);
+        }}
+      />
     </div>
   );
 }

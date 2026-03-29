@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import LevelBadge from './LevelBadge';
+import InfoButton from '../guidance/InfoButton';
+import BottomSheet from '../guidance/BottomSheet';
 
 interface XPBarProps {
   level: number;
@@ -27,6 +30,7 @@ function getLevelColor(level: number): string {
 }
 
 export default function XPBar({ level, xp, xpToNextLevel }: XPBarProps) {
+  const [open, setOpen] = useState(false);
   const pct = level >= 10 ? 100 : Math.min((xp / xpToNextLevel) * 100, 100);
   const color = getLevelColor(level);
   const levelName = LEVEL_NAMES[level] || 'Paper Rookie';
@@ -39,9 +43,12 @@ export default function XPBar({ level, xp, xpToNextLevel }: XPBarProps) {
         <LevelBadge level={level} size="md" />
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-            <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-              Level {level} · {levelName}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                Level {level} · {levelName}
+              </span>
+              <InfoButton label="What is this?" onClick={() => setOpen(true)} />
+            </div>
             <span
               style={{
                 fontFamily: 'var(--font-mono)',
@@ -88,6 +95,22 @@ export default function XPBar({ level, xp, xpToNextLevel }: XPBarProps) {
           {(xpToNextLevel - xp).toLocaleString()} XP to Level {level + 1}
         </p>
       )}
+
+      <BottomSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="XP and levels"
+        subtitle="AlphaMove scores the quality of your thinking, not how many buttons you press."
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+            XP is earned when you explain your reasoning, manage risk, and review moves honestly.
+          </p>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+            Level names show how independent you are becoming. The point is better judgment, not more trading.
+          </p>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

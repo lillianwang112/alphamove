@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import type { MoveRating } from '../../types';
 import MoveRatingBadge from './MoveRatingBadge';
+import InfoButton from '../guidance/InfoButton';
+import BottomSheet from '../guidance/BottomSheet';
 
 interface PostTradeCardProps {
   analysis: string;
@@ -18,6 +21,7 @@ export default function PostTradeCard({
   betterMove,
   onDone,
 }: PostTradeCardProps) {
+  const [open, setOpen] = useState(false);
   const isPositiveRating = moveRating === 'brilliant' || moveRating === 'great' || moveRating === 'good';
 
   return (
@@ -42,18 +46,21 @@ export default function PostTradeCard({
           textAlign: 'center',
         }}
       >
-        <p
-          style={{
-            fontSize: '0.75rem',
-            color: 'var(--accent)',
-            fontWeight: 600,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: '6px',
-          }}
-        >
-          Chess Engine Analysis
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+          <p
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--accent)',
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              marginBottom: 0,
+            }}
+          >
+            Chess Engine Analysis
+          </p>
+          <InfoButton label="Move rating" onClick={() => setOpen(true)} />
+        </div>
         <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--text-primary)' }}>
           Move Evaluated
         </h3>
@@ -177,6 +184,17 @@ export default function PostTradeCard({
           Done
         </button>
       </div>
+
+      <BottomSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Move rating"
+        subtitle="The rating judges the quality of your reasoning, not whether the stock happened to go up today."
+      >
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
+          “Brilliant” or “blunder” is AlphaMove shorthand for how strong the thesis, timing, and risk control looked together. You can earn a modest rating on a winning trade if the reasoning was weak, and a solid rating on a loser if the process was sound.
+        </p>
+      </BottomSheet>
     </div>
   );
 }

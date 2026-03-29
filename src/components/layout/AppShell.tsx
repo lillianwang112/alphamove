@@ -1,6 +1,8 @@
-import { type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import BottomNav from './BottomNav';
 import type { User } from '../../types';
+import { useGuidance } from '../../context/GuidanceContext';
+import GuidedTour from '../guidance/GuidedTour';
 
 interface AppShellProps {
   children: ReactNode;
@@ -31,10 +33,16 @@ function getLevelColor(level: number): string {
 }
 
 export default function AppShell({ children, user }: AppShellProps) {
+  const { startTour, maybeStartTour, hasSeenTour } = useGuidance();
   const level = user?.level ?? 1;
   const xp = user?.xp ?? 0;
   const xpToNext = user?.xpToNextLevel ?? 200;
   const xpPct = Math.min((xp / xpToNext) * 100, 100);
+
+  useEffect(() => {
+    if (!user || hasSeenTour) return;
+    maybeStartTour();
+  }, [hasSeenTour, maybeStartTour, user]);
 
   return (
     <div className="app-container">
@@ -91,9 +99,31 @@ export default function AppShell({ children, user }: AppShellProps) {
           </span>
         </div>
 
-        {/* Right: Level + XP */}
+        {/* Right: Help + Level + XP */}
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={() => startTour(0)}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+              }}
+              aria-label="Replay app tour"
+              title="Replay app tour"
+            >
+              ?
+            </button>
+
             {/* XP mini bar */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -169,6 +199,7 @@ export default function AppShell({ children, user }: AppShellProps) {
 
       {/* Bottom navigation */}
       <BottomNav />
+      <GuidedTour />
     </div>
   );
 }

@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import type { MorningBrief as MorningBriefType } from '../../types';
 import NewsCard from './NewsCard';
+import BottomSheet from '../guidance/BottomSheet';
+import InfoButton from '../guidance/InfoButton';
 
 interface MorningBriefProps {
   brief: MorningBriefType | null;
@@ -51,6 +54,7 @@ function BriefSkeleton() {
 }
 
 export default function MorningBrief({ brief, loading, dailyQuestion }: MorningBriefProps) {
+  const [open, setOpen] = useState<null | 'brief' | 'news'>(null);
   if (loading) return <BriefSkeleton />;
 
   if (!brief) {
@@ -119,7 +123,7 @@ export default function MorningBrief({ brief, loading, dailyQuestion }: MorningB
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <span style={{ fontSize: '1.5rem' }}>🌅</span>
-          <div>
+          <div style={{ flex: 1 }}>
             <p
               style={{
                 fontSize: '0.7rem',
@@ -136,6 +140,7 @@ export default function MorningBrief({ brief, loading, dailyQuestion }: MorningB
               Good morning! Here's what moved overnight.
             </p>
           </div>
+          <InfoButton label="What is this?" onClick={() => setOpen('brief')} />
         </div>
 
         {brief.portfolioSummary && (
@@ -180,7 +185,7 @@ export default function MorningBrief({ brief, loading, dailyQuestion }: MorningB
 
       {/* News section header */}
       {newsEvents.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <h3 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>
             News That Matters To You
           </h3>
@@ -196,6 +201,7 @@ export default function MorningBrief({ brief, loading, dailyQuestion }: MorningB
           >
             {newsEvents.length}
           </span>
+          <InfoButton label="Why this section?" onClick={() => setOpen('news')} />
         </div>
       )}
 
@@ -249,6 +255,28 @@ export default function MorningBrief({ brief, loading, dailyQuestion }: MorningB
           </div>
         </div>
       )}
+
+      <BottomSheet
+        open={open === 'brief'}
+        onClose={() => setOpen(null)}
+        title="Morning Brief"
+        subtitle="A short pre-market read for your actual position."
+      >
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
+          The brief turns overnight headlines into plain English and connects them to what you own. Read it before you trade so your next move starts from context instead of noise.
+        </p>
+      </BottomSheet>
+
+      <BottomSheet
+        open={open === 'news'}
+        onClose={() => setOpen(null)}
+        title="News that matters to you"
+        subtitle="These are not random market stories."
+      >
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
+          Alpha filters for news connected to your holdings or likely next moves. The important question is not “is this interesting?” but “could this change my thinking?”
+        </p>
+      </BottomSheet>
     </div>
   );
 }

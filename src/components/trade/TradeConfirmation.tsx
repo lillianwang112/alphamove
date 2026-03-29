@@ -1,3 +1,7 @@
+import { useState } from 'react';
+import BottomSheet from '../guidance/BottomSheet';
+import InfoButton from '../guidance/InfoButton';
+
 interface TradeConfirmationProps {
   action: 'buy' | 'sell';
   ticker: string;
@@ -19,6 +23,7 @@ export default function TradeConfirmation({
   onCancel,
   loading,
 }: TradeConfirmationProps) {
+  const [open, setOpen] = useState<null | 'thesis' | 'risk'>(null);
   const isBuy = action === 'buy';
 
   return (
@@ -184,6 +189,10 @@ export default function TradeConfirmation({
 
       {/* Disclaimer */}
       <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
+          <InfoButton label="Trade thesis" onClick={() => setOpen('thesis')} />
+          <InfoButton label="Risk check" onClick={() => setOpen('risk')} />
+        </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5 }}>
           This is a paper trade. No real money will change hands.
           Your mentor will analyze this move immediately after.
@@ -233,6 +242,28 @@ export default function TradeConfirmation({
           Cancel
         </button>
       </div>
+
+      <BottomSheet
+        open={open === 'thesis'}
+        onClose={() => setOpen(null)}
+        title="Trade thesis"
+        subtitle="A thesis is your answer to: why this move, right now?"
+      >
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
+          A good thesis says what you believe, what would need to be true, and what could prove you wrong. Alpha asks for this because reasoning matters more than the result of any single trade.
+        </p>
+      </BottomSheet>
+
+      <BottomSheet
+        open={open === 'risk'}
+        onClose={() => setOpen(null)}
+        title="Risk check"
+        subtitle="Before you execute, ask what this move could cost you."
+      >
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
+          Risk is about position size and uncertainty. A manageable mistake teaches. A giant, impulsive move usually just overwhelms the lesson.
+        </p>
+      </BottomSheet>
     </div>
   );
 }

@@ -1,17 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMarketData } from '../hooks/useMarketData';
 import { useMentor } from '../hooks/useMentor';
 import { useTrade } from '../hooks/useTrade';
 import { useXP } from '../hooks/useXP';
 import { usePortfolio } from '../hooks/usePortfolio';
+import { useGuidance } from '../context/GuidanceContext';
 import TickerSearch from '../components/trade/TickerSearch';
 import StockPreview from '../components/trade/StockPreview';
 import TradeForm from '../components/trade/TradeForm';
 import MentorChat from '../components/mentor/MentorChat';
 import TradeConfirmation from '../components/trade/TradeConfirmation';
 import PostTradeCard from '../components/mentor/PostTradeCard';
+import TourAnchor from '../components/guidance/TourAnchor';
+import LearnSheet from '../components/guidance/LearnSheet';
 import type { TradeAction, MentorMessage, MentorConversation, MoveRating } from '../types';
 
 type TradeStep =
@@ -50,8 +53,10 @@ interface PostTradeResult {
 }
 
 export default function TradePage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { beginnerMode } = useGuidance();
   const { getQuote, getCompanyProfile } = useMarketData();
   const { startPreTradeChat, sendMessage, generatePostTradeAnalysis } = useMentor();
   const { executeTrade } = useTrade();
@@ -80,6 +85,7 @@ export default function TradePage() {
 
   // Post-trade
   const [postTradeResult, setPostTradeResult] = useState<PostTradeResult | null>(null);
+  const [learnOpen, setLearnOpen] = useState(false);
 
   const loadQuote = useCallback(async (sym: string, act: TradeAction, name?: string) => {
     setQuoteLoading(true);
@@ -385,10 +391,58 @@ export default function TradePage() {
       {/* Search step */}
       {step === 'search' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'slideInUp 0.4s ease both' }}>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0 }}>
-            Search for a stock to begin your analysis with Alpha.
-          </p>
-          <TickerSearch onSelect={handleTickerSelect} />
+          <TourAnchor id="trade-search">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '14px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                <p style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: 600, margin: 0 }}>
+                  Start with one company or ETF you can explain in a sentence.
+                </p>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+                  You are not committing real money here. You are practicing how to notice what a business does, why it might move, and what risk you are taking.
+                </p>
+                {beginnerMode && (
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setLearnOpen(true)}
+                      className="btn btn-ghost"
+                      style={{ padding: '10px 12px', fontSize: '0.8rem' }}
+                    >
+                      Learn before searching
+                    </button>
+                    <button
+                      onClick={() => navigate('/mentor', {
+                        state: {
+                          suggestedPrompt: 'I am new. Help me choose a simple first stock or ETF to analyze and explain why.',
+                        },
+                      })}
+                      className="btn btn-secondary"
+                      style={{ padding: '10px 12px', fontSize: '0.8rem' }}
+                    >
+                      Ask Alpha what to analyze
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <TickerSearch onSelect={handleTickerSelect} />
+
+              {beginnerMode && (
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>
+                  Try typing a company you know, like Apple or Microsoft, or start with SPY if you want to practice on a broad market ETF instead of one company.
+                </p>
+              )}
+            </div>
+          </TourAnchor>
 
           {quoteLoading && (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '24px' }}>
@@ -449,6 +503,57 @@ export default function TradePage() {
               ))}
             </div>
           </div>
+
+          {beginnerMode && (
+            <div
+              style={{
+                display: 'grid',
+                gap: '10px',
+              }}
+            >
+              {[
+                {
+                  title: 'Start with Apple',
+                  body: 'A familiar company is easier to reason about because you already know the product and the business.',
+                  action: () => handleTickerSelect('AAPL', 'Apple Inc'),
+                },
+                {
+                  title: 'Try a broad ETF',
+                  body: 'SPY lets you practice with the wider market instead of betting your whole idea on one company.',
+                  action: () => handleTickerSelect('SPY', 'SPDR S&P 500 ETF Trust'),
+                },
+                {
+                  title: 'Compare company vs ETF with Alpha',
+                  body: 'If you are unsure whether to start with one stock or the whole market, let Alpha frame the tradeoff first.',
+                  action: () => navigate('/mentor', {
+                    state: {
+                      suggestedPrompt: 'Compare starting with Apple versus starting with SPY for a beginner paper trader.',
+                    },
+                  }),
+                },
+              ].map((starter) => (
+                <button
+                  key={starter.title}
+                  onClick={starter.action}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(28, 28, 46, 1) 0%, rgba(20, 20, 31, 1) 100%)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '16px',
+                    padding: '14px 16px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <p style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                    {starter.title}
+                  </p>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
+                    {starter.body}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -548,6 +653,20 @@ export default function TradePage() {
           onDone={handleDone}
         />
       )}
+
+      <LearnSheet
+        open={learnOpen}
+        onClose={() => setLearnOpen(false)}
+        initialTopic="etf"
+        onAskAlpha={(topic) => {
+          setLearnOpen(false);
+          navigate('/mentor', {
+            state: {
+              suggestedPrompt: `Teach me ${topic} in plain English, then suggest a beginner-friendly way to practice it in AlphaMove.`,
+            },
+          });
+        }}
+      />
     </div>
   );
 }

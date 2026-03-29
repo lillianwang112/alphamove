@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import type { Portfolio } from '../../types';
+import BottomSheet from '../guidance/BottomSheet';
+import InfoButton from '../guidance/InfoButton';
 
 interface PortfolioSummaryProps {
   portfolio: Portfolio;
@@ -17,6 +20,7 @@ function formatPct(value: number): string {
 }
 
 export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
+  const [open, setOpen] = useState<null | 'value' | 'cash'>(null);
   const isPositive = portfolio.allTimeReturn >= 0;
   const isDayPositive = portfolio.dayChange >= 0;
 
@@ -46,18 +50,21 @@ export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
 
       {/* Total value */}
       <div style={{ marginBottom: '4px' }}>
-        <p
-          style={{
-            fontSize: '0.75rem',
-            color: 'var(--text-muted)',
-            fontWeight: 500,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            marginBottom: '6px',
-          }}
-        >
-          Total Portfolio Value
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+          <p
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)',
+              fontWeight: 500,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              marginBottom: '0',
+            }}
+          >
+            Total Portfolio Value
+          </p>
+          <InfoButton label="How to read this" onClick={() => setOpen('value')} />
+        </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
           <span
             style={{
@@ -142,18 +149,21 @@ export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
 
         {/* Cash available */}
         <div>
-          <p
-            style={{
-              fontSize: '0.7rem',
-              color: 'var(--text-muted)',
-              fontWeight: 500,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              marginBottom: '4px',
-            }}
-          >
-            Cash Available
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+            <p
+              style={{
+                fontSize: '0.7rem',
+                color: 'var(--text-muted)',
+                fontWeight: 500,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                marginBottom: 0,
+              }}
+            >
+              Cash Available
+            </p>
+            <InfoButton label="?" onClick={() => setOpen('cash')} />
+          </div>
           <p
             style={{
               fontFamily: 'var(--font-mono)',
@@ -180,6 +190,28 @@ export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
           </p>
         </div>
       </div>
+
+      <BottomSheet
+        open={open === 'value'}
+        onClose={() => setOpen(null)}
+        title="Portfolio value"
+        subtitle="This is your paper account in one number."
+      >
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
+          Portfolio value combines the current value of your positions with any cash you have not invested yet. It is the clearest snapshot of your overall position.
+        </p>
+      </BottomSheet>
+
+      <BottomSheet
+        open={open === 'cash'}
+        onClose={() => setOpen(null)}
+        title="Cash available"
+        subtitle="Cash available is the part of your account that is still on the sidelines."
+      >
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>
+          Use it to size your next move. Beginners usually learn faster by leaving some cash uncommitted instead of going all in on one idea.
+        </p>
+      </BottomSheet>
     </div>
   );
 }
