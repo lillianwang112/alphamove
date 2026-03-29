@@ -404,6 +404,183 @@ Respond in JSON:
   }
 }
 
+// ─── Thesis Scorer ────────────────────────────────
+
+export interface ThesisScoreResult {
+  clarity: { score: number; note: string };
+  riskAwareness: { score: number; note: string };
+  macroAwareness: { score: number; note: string };
+  overallFeedback: string;
+  canProceed: boolean;
+}
+
+export async function scoreThesis(
+  thesis: string,
+  ticker: string,
+  action: 'buy' | 'sell',
+  userLevel: number
+): Promise<ThesisScoreResult> {
+  const systemPrompt = `You are Alpha, an investing mentor. Score investing theses honestly and concisely. Always respond ONLY with valid JSON.`;
+
+  const userPrompt = `Score this investing thesis for a Level ${userLevel} investor wanting to ${action} ${ticker}.
+
+Thesis: "${thesis}"
+
+Rate each dimension 1-5 (1=poor, 5=excellent) and give a 1-sentence note:
+- clarity: Is the reasoning specific and falsifiable?
+- riskAwareness: Does the user acknowledge downside risk?
+- macroAwareness: Is the thesis connected to current market conditions?
+
+Also give: overallFeedback (2 encouraging but honest sentences), canProceed (true if average score >= 2.0)
+
+Respond ONLY in this exact JSON format:
+{
+  "clarity": { "score": 3, "note": "..." },
+  "riskAwareness": { "score": 2, "note": "..." },
+  "macroAwareness": { "score": 2, "note": "..." },
+  "overallFeedback": "...",
+  "canProceed": true
+}`;
+
+  const raw = await callAI([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ]);
+
+  try {
+    const parsed = JSON.parse(extractJSON(raw)) as ThesisScoreResult;
+    return parsed;
+  } catch {
+    return {
+      clarity: { score: 3, note: 'Your thesis shows some reasoning but could be more specific.' },
+      riskAwareness: { score: 2, note: 'Consider what could go wrong with this trade.' },
+      macroAwareness: { score: 2, note: 'Try connecting your thesis to current market conditions.' },
+      overallFeedback: 'Your thesis shows intent. Before you commit, make sure you can answer: what would prove you wrong? That\'s the mark of disciplined thinking.',
+      canProceed: true,
+    };
+  }
+}
+
+// ─── Coach Guidance ───────────────────────────────
+
+export interface CoachGuidanceResult {
+  points: string[];
+}
+
+export async function generateCoachGuidance(
+  widgetName: string,
+  contextData: string,
+  userLevel: number
+): Promise<CoachGuidanceResult> {
+  const systemPrompt = `You are Alpha, an investing mentor. Give specific, actionable coaching points for beginner investors. Always respond ONLY with valid JSON.`;
+
+  const userPrompt = `A Level ${userLevel} investor is looking at their ${widgetName}. Here is the data:
+
+${contextData}
+
+Give exactly 3 specific things they should notice or think about. Each point should be 1-2 sentences, concrete, and educational — not generic advice.
+Think like a good coach pointing out what a beginner would miss.
+
+Respond ONLY in this exact JSON format:
+{ "points": ["...", "...", "..."] }`;
+
+  const raw = await callAI([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ]);
+
+  try {
+    const parsed = JSON.parse(extractJSON(raw)) as CoachGuidanceResult;
+    if (!Array.isArray(parsed.points) || parsed.points.length === 0) throw new Error('Invalid');
+    return { points: parsed.points.slice(0, 3) };
+  } catch {
+    return {
+      points: [
+        'Compare what you expected to see vs. what\'s actually here — the gap is your learning.',
+        'Look for the number that surprises you most and ask why it moved that way.',
+        'Before acting, ask: would this data change my thesis, or am I just looking for confirmation?',
+      ],
+    };
+  }
+}
+
+// ─── Scenario Replay ─────────────────────────────
+
+export interface ScenarioCase {
+  title: string;
+  description: string;
+  priceTarget: number;
+  probability: string;
+}
+
+export interface ScenarioReplayResult {
+  bull: ScenarioCase;
+  base: ScenarioCase;
+  bear: ScenarioCase;
+}
+
+export async function generateScenarioReplay(
+  ticker: string,
+  action: 'buy' | 'sell',
+  thesis: string,
+  currentPrice: number,
+  userLevel: number
+): Promise<ScenarioReplayResult> {
+  const systemPrompt = `You are Alpha, an investing mentor teaching through scenarios. Always respond ONLY with valid JSON.`;
+
+  const userPrompt = `A Level ${userLevel} investor just ${action === 'buy' ? 'bought' : 'sold'} ${ticker} at $${currentPrice.toFixed(2)}.
+Their thesis: "${thesis}"
+
+Generate 3 realistic 3-month scenarios as educational examples. Make them specific to ${ticker} and the current market context.
+
+Rules:
+- Bull: optimistic but plausible (+10% to +40% for stocks). Give a specific catalyst.
+- Base: most likely path given current conditions (-5% to +15%). Be realistic.
+- Bear: downside case that a careful investor should plan for (-10% to -35%). Be specific about what could go wrong.
+- Probabilities should sum to roughly 100%.
+
+Respond ONLY in this exact JSON format:
+{
+  "bull": { "title": "...", "description": "...", "priceTarget": 0, "probability": "X%" },
+  "base": { "title": "...", "description": "...", "priceTarget": 0, "probability": "X%" },
+  "bear": { "title": "...", "description": "...", "priceTarget": 0, "probability": "X%" }
+}`;
+
+  const raw = await callAI([
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ]);
+
+  try {
+    const parsed = JSON.parse(extractJSON(raw)) as ScenarioReplayResult;
+    return parsed;
+  } catch {
+    const bullPrice = currentPrice * 1.18;
+    const basePrice = currentPrice * 1.04;
+    const bearPrice = currentPrice * 0.85;
+    return {
+      bull: {
+        title: 'Strong growth momentum continues',
+        description: `${ticker} outperforms as positive catalysts materialize. Your thesis proves directionally correct.`,
+        priceTarget: Math.round(bullPrice * 100) / 100,
+        probability: '25%',
+      },
+      base: {
+        title: 'Steady but modest movement',
+        description: `${ticker} tracks broadly with the market. No major surprises in either direction.`,
+        priceTarget: Math.round(basePrice * 100) / 100,
+        probability: '50%',
+      },
+      bear: {
+        title: 'Macro headwinds or company-specific setback',
+        description: `${ticker} faces pressure from factors outside your thesis. A good lesson in position sizing.`,
+        priceTarget: Math.round(bearPrice * 100) / 100,
+        probability: '25%',
+      },
+    };
+  }
+}
+
 // ─── Convert AI Brief to MorningBrief type ────────
 
 export function buildMorningBrief(

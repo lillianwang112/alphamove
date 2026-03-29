@@ -83,35 +83,46 @@ export default function FloatingAlpha({ user }: FloatingAlphaProps) {
 
   return createPortal(
     <>
-      {/* FAB button */}
+      {/* FAB — centered wrapper keeps it inside the 430px app column */}
       {!open && (
-        <button
-          onClick={handleOpen}
-          aria-label="Ask Alpha"
-          style={{
-            position: 'fixed',
-            bottom: `${bottomOffset}px`,
-            right: '16px',
-            width: '52px',
-            height: '52px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
-            border: 'none',
-            color: 'white',
-            fontSize: '1.35rem',
-            cursor: 'pointer',
-            zIndex: 900,
-            boxShadow: '0 4px 24px rgba(99,102,241,0.55)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-          }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
-        >
-          ♟
-        </button>
+        <div style={{
+          position: 'fixed',
+          bottom: `${bottomOffset}px`,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: '430px',
+          pointerEvents: 'none',
+          zIndex: 900,
+        }}>
+          <button
+            onClick={handleOpen}
+            aria-label="Ask Alpha"
+            style={{
+              position: 'absolute',
+              right: '16px',
+              bottom: 0,
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+              border: 'none',
+              color: 'white',
+              fontSize: '1.35rem',
+              cursor: 'pointer',
+              pointerEvents: 'all',
+              boxShadow: '0 4px 24px rgba(99,102,241,0.55)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
+          >
+            ♟
+          </button>
+        </div>
       )}
 
       {/* Chat sheet */}

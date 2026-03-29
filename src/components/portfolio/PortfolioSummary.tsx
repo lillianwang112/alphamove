@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Portfolio } from '../../types';
 import BottomSheet from '../guidance/BottomSheet';
 import InfoButton from '../guidance/InfoButton';
+import CoachPanel from '../guidance/CoachPanel';
 
 interface PortfolioSummaryProps {
   portfolio: Portfolio;
@@ -21,6 +22,7 @@ function formatPct(value: number): string {
 
 export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
   const [open, setOpen] = useState<null | 'value' | 'cash'>(null);
+  const [coachOpen, setCoachOpen] = useState(false);
   const isPositive = portfolio.allTimeReturn >= 0;
   const isDayPositive = portfolio.dayChange >= 0;
 
@@ -64,6 +66,12 @@ export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
             Total Portfolio Value
           </p>
           <InfoButton label="How to read this" onClick={() => setOpen('value')} />
+          <button
+            onClick={() => setCoachOpen(true)}
+            style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '999px', color: 'var(--accent)', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', padding: '3px 10px', WebkitTapHighlightColor: 'transparent' }}
+          >
+            What should I notice?
+          </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
           <span
@@ -212,6 +220,12 @@ export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
           Use it to size your next move. Beginners usually learn faster by leaving some cash uncommitted instead of going all in on one idea.
         </p>
       </BottomSheet>
+      <CoachPanel
+        open={coachOpen}
+        onClose={() => setCoachOpen(false)}
+        widgetName="Portfolio Overview"
+        contextData={`Total value: $${portfolio.totalValue.toFixed(2)}, Invested: $${portfolio.totalInvested.toFixed(2)}, Cash: $${(portfolio.totalValue - portfolio.totalInvested).toFixed(2)}, All-time return: ${(portfolio.allTimeReturnPct * 100).toFixed(2)}%, Day change: ${(portfolio.dayChangePct * 100).toFixed(2)}%`}
+      />
     </div>
   );
 }

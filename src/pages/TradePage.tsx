@@ -20,10 +20,17 @@ import OptionsChain from '../components/trade/OptionsChain';
 import { getCryptoQuote, getCryptoName } from '../services/cryptoService';
 import type { TradeAction, MentorMessage, MentorConversation, MoveRating, AssetClass, OptionContract } from '../types';
 import type { OrderType, TimeInForce } from '../components/trade/TradeForm';
+import ThesisInput from '../components/trade/ThesisInput';
+import ThesisScore from '../components/trade/ThesisScore';
+import ScenarioReplay from '../components/mentor/ScenarioReplay';
+import { scoreThesis, generateScenarioReplay } from '../services/mentorService';
+import type { ThesisScoreResult, ScenarioReplayResult } from '../services/mentorService';
 
 type TradeStep =
   | 'search'
   | 'preview'
+  | 'thesis_input'
+  | 'thesis_score'
   | 'trade_form'
   | 'mentor_chat'
   | 'confirmation'
@@ -97,6 +104,15 @@ export default function TradePage() {
   // Trade execution
   const [tradeLoading, setTradeLoading] = useState(false);
 
+  // Thesis scoring
+  const [thesis, setThesis] = useState('');
+  const [thesisScores, setThesisScores] = useState<ThesisScoreResult | null>(null);
+  const [thesisScoring, setThesisScoring] = useState(false);
+
+  // Scenario replay
+  const [scenarioData, setScenarioData] = useState<ScenarioReplayResult | null>(null);
+  const [scenarioLoading, setScenarioLoading] = useState(false);
+
   // Post-trade
   const [postTradeResult, setPostTradeResult] = useState<PostTradeResult | null>(null);
   const [learnOpen, setLearnOpen] = useState(false);
@@ -167,8 +183,24 @@ export default function TradePage() {
     await loadQuote(symbol, 'buy', name);
   };
 
-  const handleBuy = () => { setAction('buy'); setStep('trade_form'); };
-  const handleSell = () => { setAction('sell'); setStep('trade_form'); };
+  const handleBuy = () => { setAction('buy'); setThesis(''); setThesisScores(null); setStep('thesis_input'); };
+  const handleSell = () => { setAction('sell'); setThesis(''); setThesisScores(null); setStep('thesis_input'); };
+
+  const handleThesisSubmit = async (text: string) => {
+    setThesis(text);
+    setThesisScoring(true);
+    setStep('thesis_score');
+    try {
+      const scores = await scoreThesis(text, ticker, action, user?.level ?? 1);
+      setThesisScores(scores);
+    } finally {
+      setThesisScoring(false);
+    }
+  };
+
+  const handleThesisProceed = () => {
+    setStep('trade_form');
+  };
 
   const handleSharesSubmit = async (numShares: number, ot: OrderType, lp?: number, tif?: TimeInForce, trailPct?: number) => {
     setShares(numShares);
@@ -213,6 +245,10 @@ export default function TradePage() {
       });
       setConversation(conv);
       setMessages(conv.messages);
+      // Pre-fill mentor summary with the thesis
+      if (thesis) {
+        setMentorSummary(`User thesis: ${thesis}`);
+      }
     } catch (err) {
       console.error('Failed to start mentor chat:', err);
       // Create a fallback conversation
@@ -418,6 +454,13 @@ export default function TradePage() {
       });
 
       setStep('post_trade');
+
+      // Generate scenario replay in background
+      setScenarioLoading(true);
+      generateScenarioReplay(ticker, action, userThesis, executionPrice, user.level ?? 1)
+        .then((scenarios) => setScenarioData(scenarios))
+        .catch(() => {})
+        .finally(() => setScenarioLoading(false));
     } catch (err) {
       console.error('Failed to execute trade:', err);
     } finally {
@@ -443,6 +486,9 @@ export default function TradePage() {
     setTrailingPct(undefined);
     setAssetClass('stock');
     setOptionContract(null);
+    setThesis('');
+    setThesisScores(null);
+    setScenarioData(null);
   };
 
   const currentPosition = positions.find((p) => p.ticker === ticker);
@@ -450,7 +496,7 @@ export default function TradePage() {
     ? portfolio.totalValue - portfolio.totalInvested
     : user?.currentCash ?? 0;
 
-  const STEPS_ORDERED: TradeStep[] = ['search', 'preview', 'trade_form', 'mentor_chat', 'confirmation', 'post_trade'];
+  const STEPS_ORDERED: TradeStep[] = ['search', 'preview', 'thesis_input', 'thesis_score', 'trade_form', 'mentor_chat', 'confirmation', 'post_trade'];
 
   // For options: the effective price and shares at confirmation
   const optionEffectivePrice = optionContract ? optionContract.premium * 100 : 0;
@@ -488,6 +534,8 @@ export default function TradePage() {
             {step === 'search' && 'Make a Move'}
             {step === 'preview' && (ticker || 'Stock Preview')}
             {step === 'trade_form' && `${action === 'buy' ? 'Buy' : 'Sell'} ${ticker}`}
+            {step === 'thesis_input' && 'Your Thesis'}
+            {step === 'thesis_score' && 'Alpha\'s Verdict'}
             {step === 'mentor_chat' && 'Pre-Trade Review'}
             {step === 'confirmation' && 'Confirm Trade'}
             {step === 'post_trade' && 'Move Evaluated'}
@@ -811,6 +859,31 @@ export default function TradePage() {
         />
       )}
 
+      {/* Thesis input step */}
+      {step === 'thesis_input' && quote && (
+        <ThesisInput
+          ticker={ticker}
+          action={action}
+          price={quote.price}
+          companyName={companyName || profile?.name || ticker}
+          onSubmit={handleThesisSubmit}
+          onBack={() => setStep('preview')}
+        />
+      )}
+
+      {/* Thesis score step */}
+      {step === 'thesis_score' && (
+        <ThesisScore
+          thesis={thesis}
+          ticker={ticker}
+          action={action}
+          scores={thesisScores}
+          loading={thesisScoring}
+          onProceed={handleThesisProceed}
+          onRevise={() => setStep('thesis_input')}
+        />
+      )}
+
       {/* Trade form step */}
       {step === 'trade_form' && quote && (
         <TradeForm
@@ -909,6 +982,15 @@ export default function TradePage() {
           xpReason={postTradeResult.xpReason}
           betterMove={postTradeResult.betterMove}
           onDone={handleDone}
+        />
+      )}
+      {step === 'post_trade' && (
+        <ScenarioReplay
+          ticker={ticker}
+          action={action}
+          price={quote?.price ?? 0}
+          scenarios={scenarioData}
+          loading={scenarioLoading}
         />
       )}
 

@@ -7,6 +7,7 @@ import { useGuidance } from '../context/GuidanceContext';
 import MorningBrief from '../components/brief/MorningBrief';
 import PortfolioSummary from '../components/portfolio/PortfolioSummary';
 import XPBar from '../components/leveling/XPBar';
+import SkillsBar from '../components/leveling/SkillsBar';
 import TourAnchor from '../components/guidance/TourAnchor';
 import LearnSheet from '../components/guidance/LearnSheet';
 import { useState } from 'react';
@@ -211,6 +212,13 @@ export default function HomePage() {
           </div>
           </div>
         </TourAnchor>
+      )}
+
+      {/* Skills tracks */}
+      {user && user.xp > 0 && (
+        <div style={{ animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both', animationDelay: '0.08s' }}>
+          <SkillsBar totalXP={user.xp} skillXP={user.skillXP} compact={false} />
+        </div>
       )}
 
       {/* Quick trade CTA */}

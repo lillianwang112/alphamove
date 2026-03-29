@@ -16,6 +16,12 @@ export interface User {
   totalTrades: number;
   streak: number;               // consecutive days active
   lastActiveAt: Timestamp;
+  skillXP?: {
+    risk: number;
+    macro: number;
+    valuation: number;
+    discipline: number;
+  };
 }
 
 // ─── Portfolio ────────────────────────────────────

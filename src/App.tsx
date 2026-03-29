@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/globals.css';
 import './styles/animations.css';
@@ -14,6 +14,46 @@ import PortfolioPage from './pages/PortfolioPage';
 import TradePage from './pages/TradePage';
 import MentorPage from './pages/MentorPage';
 import ProfilePage from './pages/ProfilePage';
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0A0A0F', padding: '24px', gap: '16px', textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem' }}>♟</div>
+          <h2 style={{ color: '#F8FAFC', fontSize: '1.25rem', fontWeight: 700 }}>Something went wrong</h2>
+          <p style={{ color: '#94A3B8', fontSize: '0.875rem', maxWidth: '30ch', lineHeight: 1.6 }}>
+            AlphaMove hit an unexpected error. Try reloading the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ background: '#6366F1', color: 'white', border: 'none', borderRadius: '12px', padding: '14px 28px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Reload
+          </button>
+          {import.meta.env.DEV && this.state.error && (
+            <pre style={{ fontSize: '0.7rem', color: '#64748B', maxWidth: '90vw', overflow: 'auto', textAlign: 'left', padding: '12px', background: '#14141F', borderRadius: '8px' }}>
+              {this.state.error.message}
+            </pre>
+          )}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function LoadingScreen() {
   return (
@@ -155,10 +195,12 @@ export default function App() {
   const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
 
   return (
-    <Router>
-      <GuidanceProvider>
-        <AuthGate />
-      </GuidanceProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <GuidanceProvider>
+          <AuthGate />
+        </GuidanceProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
