@@ -75,6 +75,91 @@
   --app-max-width: 430px;
   --header-height: 60px;
   --bottom-nav-height: 72px;
+
+  /* Themed backgrounds (override in light mode) */
+  --header-bg: rgba(10, 10, 15, 0.9);
+  --nav-bg: rgba(20, 20, 31, 0.95);
+  --sidebar-bg: rgba(14, 14, 22, 0.98);
+}
+
+/* ─── Light Theme ────────────────────────────── */
+[data-theme="light"] {
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-elevated: #F1F5F9;
+  --surface-hover: #E2E8F0;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --header-bg: rgba(248, 250, 252, 0.95);
+  --nav-bg: rgba(255, 255, 255, 0.97);
+  --sidebar-bg: rgba(248, 250, 252, 0.99);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* ─── Responsive Layout ─────────────────────── */
+@media (min-width: 768px) {
+  :root {
+    --app-max-width: 680px;
+  }
+}
+
+@media (min-width: 1100px) {
+  :root {
+    --app-max-width: 900px;
+  }
+}
+
+@media (min-width: 1400px) {
+  :root {
+    --app-max-width: 1100px;
+  }
+}
+
+/* ─── Desktop Sidebar Layout ─────────────────── */
+.desktop-shell {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  max-width: var(--app-max-width);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--bg);
+  position: relative;
+}
+
+.desktop-sidebar {
+  display: none;
+}
+
+.desktop-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (min-width: 1100px) {
+  .desktop-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .bottom-nav-hide-desktop {
+    display: none !important;
+  }
 }
 
 /* ─── Reset ──────────────────────────────────────── */

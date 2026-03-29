@@ -124,7 +124,7 @@ export default function BottomNav() {
         width: '100%',
         maxWidth: 'var(--app-max-width)',
         height: 'var(--bottom-nav-height)',
-        background: 'rgba(20, 20, 31, 0.95)',
+        background: 'var(--nav-bg)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         borderTop: '1px solid var(--border)',
