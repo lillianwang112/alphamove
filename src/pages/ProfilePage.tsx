@@ -10,6 +10,7 @@ import TourAnchor from '../components/guidance/TourAnchor';
 import { useEffect } from 'react';
 import type { XPEvent } from '../types';
 import { getPositions, removePosition, updateUserData } from '../services/portfolioService';
+import { getCachedXPHistory } from '../services/xpService';
 
 function getLevelColor(level: number): string {
   if (level <= 2) return '#64748B';
@@ -23,8 +24,8 @@ export default function ProfilePage() {
   const { beginnerMode, setBeginnerMode, startTour, tradeMode, setTradeMode } = useGuidance();
   const { getXPHistory } = useXP();
   const { portfolio, positions } = usePortfolio(user?.uid ?? '');
-  const [xpHistory, setXpHistory] = useState<XPEvent[]>([]);
-  const [xpLoading, setXpLoading] = useState(true);
+  const [xpHistory, setXpHistory] = useState<XPEvent[]>(() => getCachedXPHistory(user?.uid ?? '') ?? []);
+  const [xpLoading, setXpLoading] = useState(() => !getCachedXPHistory(user?.uid ?? ''));
   const [signingOut, setSigningOut] = useState(false);
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [showCapitalModal, setShowCapitalModal] = useState(false);

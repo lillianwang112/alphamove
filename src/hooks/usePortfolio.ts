@@ -17,9 +17,18 @@ import { getQuote } from '../services/marketService';
 import { getUserData } from '../services/portfolioService';
 
 export function usePortfolio(uid: string) {
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [positions, setPositions] = useState<Position[]>(() => {
+    const c = uid ? _portfolioCache.get(uid) : undefined;
+    return c && Date.now() - c.ts < PORTFOLIO_TTL ? c.positions : [];
+  });
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(() => {
+    const c = uid ? _portfolioCache.get(uid) : undefined;
+    return c && Date.now() - c.ts < PORTFOLIO_TTL ? c.portfolio : null;
+  });
+  const [loading, setLoading] = useState(() => {
+    const c = uid ? _portfolioCache.get(uid) : undefined;
+    return !(c && Date.now() - c.ts < PORTFOLIO_TTL);
+  });
 
   const loadPortfolio = useCallback(async () => {
     if (!uid) return;

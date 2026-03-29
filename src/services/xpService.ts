@@ -13,6 +13,13 @@ import type { XPEvent, XPSource } from '../types';
 import { XP_THRESHOLDS, LEVEL_CONFIGS } from '../config/constants';
 import { getUserData, updateUserData } from './portfolioService';
 
+// ─── XP History Cache ─────────────────────────────
+const _xpHistoryCache = new Map<string, XPEvent[]>();
+
+export function getCachedXPHistory(uid: string): XPEvent[] | null {
+  return _xpHistoryCache.get(uid) ?? null;
+}
+
 // ─── Level Calculation ────────────────────────────
 
 export function calculateLevel(totalXP: number): { level: number; xpToNextLevel: number } {
@@ -88,11 +95,15 @@ export async function awardXP(
 // ─── Get XP History ───────────────────────────────
 
 export async function getXPHistory(uid: string): Promise<XPEvent[]> {
+  const cached = _xpHistoryCache.get(uid);
+  if (cached) return cached;
   try {
     const xpEventsRef = collection(db, 'users', uid, 'xpEvents');
     const q = query(xpEventsRef, orderBy('createdAt', 'desc'));
     const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as XPEvent));
+    const result = snap.docs.map((d) => ({ id: d.id, ...d.data() } as XPEvent));
+    _xpHistoryCache.set(uid, result);
+    return result;
   } catch (err) {
     console.error('getXPHistory error:', err);
     return [];
