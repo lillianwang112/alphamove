@@ -1,4 +1,7 @@
 import { FINNHUB_API_KEY, FINNHUB_BASE_URL } from '../config/finnhub';
+
+const FMP_API_KEY = import.meta.env.VITE_FMP_API_KEY || '';
+const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
 import { Timestamp } from 'firebase/firestore';
 import type { NewsEvent } from '../types';
 
@@ -183,28 +186,39 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
   const hit = _candleCache.get(cacheKey);
   if (hit && Date.now() < hit.exp) return hit.result;
 
-  const to = Math.floor(Date.now() / 1000);
-  const from = to - days * 24 * 60 * 60;
+  const toDate = new Date();
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - days);
 
-  try {
-    const data = await finnhubFetch<{
-      c: number[];
-      h: number[];
-      l: number[];
-      t: number[];
-      s: string;
-    }>(`/stock/candle?symbol=${encodeURIComponent(ticker)}&resolution=D&from=${from}&to=${to}`);
-
-    if (data.s !== 'ok' || !Array.isArray(data.c) || data.c.length === 0) {
-      return { closes: [], timestamps: [], highs: [], lows: [] };
+  // Primary: Financial Modeling Prep (free tier includes historical OHLCV)
+  if (FMP_API_KEY) {
+    try {
+      const url = `${FMP_BASE_URL}/historical-price-full/${encodeURIComponent(ticker)}?from=${formatDate(fromDate)}&to=${formatDate(toDate)}&apikey=${FMP_API_KEY}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json() as {
+          symbol: string;
+          historical: Array<{ date: string; open: number; high: number; low: number; close: number }>;
+        };
+        if (data.historical && data.historical.length >= 5) {
+          // FMP returns newest-first — reverse to chronological
+          const rows = [...data.historical].reverse();
+          const result: CandleResult = {
+            closes: rows.map((r) => r.close),
+            timestamps: rows.map((r) => Math.floor(new Date(r.date).getTime() / 1000)),
+            highs: rows.map((r) => r.high),
+            lows: rows.map((r) => r.low),
+          };
+          _candleCache.set(cacheKey, { result, exp: Date.now() + CACHE_TTL });
+          return result;
+        }
+      }
+    } catch {
+      // fall through to empty
     }
-
-    const result: CandleResult = { closes: data.c, timestamps: data.t, highs: data.h, lows: data.l };
-    _candleCache.set(cacheKey, { result, exp: Date.now() + CACHE_TTL });
-    return result;
-  } catch {
-    return { closes: [], timestamps: [], highs: [], lows: [] };
   }
+
+  return { closes: [], timestamps: [], highs: [], lows: [] };
 }
 
 // ─── Stock Metrics ────────────────────────────────
