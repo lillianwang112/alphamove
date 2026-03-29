@@ -49,15 +49,16 @@ export default function LevelBadge({ level, size = 'md', showNumber = false }: L
         gap: '0',
       }}
     >
-      <span style={{ fontSize: dims.pieceSize, lineHeight: 1, color }}>{piece}</span>
+      <span style={{ fontSize: dims.pieceSize, lineHeight: 1, color: 'white', WebkitTextStroke: '0.4px rgba(255,255,255,0.5)' }}>{piece}</span>
       {showNumber && (
         <span style={{
           fontSize: dims.numSize,
           fontWeight: 700,
-          color,
+          color: 'white',
           fontFamily: 'var(--font-mono)',
           lineHeight: 1,
           marginTop: '1px',
+          opacity: 0.85,
         }}>
           {level}
         </span>

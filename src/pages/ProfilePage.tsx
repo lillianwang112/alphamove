@@ -125,7 +125,7 @@ export default function ProfilePage() {
             width: '64px',
             height: '64px',
             borderRadius: '50%',
-            background: 'white',
+            background: `${levelColor}28`,
             border: `2px solid ${levelColor}`,
             display: 'flex',
             flexDirection: 'column',
@@ -136,10 +136,10 @@ export default function ProfilePage() {
             gap: '1px',
           }}
         >
-          <span style={{ fontSize: '1.75rem', lineHeight: 1, color: '#111' }}>
+          <span style={{ fontSize: '1.75rem', lineHeight: 1, color: 'white', WebkitTextStroke: '0.5px rgba(255,255,255,0.5)' }}>
             {getChessPiece(level)}
           </span>
-          <span style={{ fontSize: '0.58rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: levelColor, opacity: 0.7 }}>
+          <span style={{ fontSize: '0.58rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'white', opacity: 0.85 }}>
             LVL {level}
           </span>
         </div>
