@@ -69,7 +69,7 @@ export default function TradePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { beginnerMode, tradeMode } = useGuidance();
+  const { beginnerMode, tradeMode, setTradeMode } = useGuidance();
   const { getQuote, getCompanyProfile } = useMarketData();
   const { startPreTradeChat, sendMessage, generatePostTradeAnalysis } = useMentor();
   const { executeTrade } = useTrade();
@@ -539,16 +539,39 @@ export default function TradePage() {
           </button>
         )}
         <div style={{ flex: 1 }}>
-          <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-            {step === 'search' && 'Make a Move'}
-            {step === 'preview' && (ticker || 'Stock Preview')}
-            {step === 'trade_form' && `${action === 'buy' ? 'Buy' : 'Sell'} ${ticker}`}
-            {step === 'thesis_input' && 'Your Thesis'}
-            {step === 'thesis_score' && 'Alpha\'s Verdict'}
-            {step === 'mentor_chat' && 'Pre-Trade Review'}
-            {step === 'confirmation' && 'Confirm Trade'}
-            {step === 'post_trade' && 'Move Evaluated'}
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <h1 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              {step === 'search' && 'Make a Move'}
+              {step === 'preview' && (ticker || 'Stock Preview')}
+              {step === 'trade_form' && `${action === 'buy' ? 'Buy' : 'Sell'} ${ticker}`}
+              {step === 'thesis_input' && 'Your Thesis'}
+              {step === 'thesis_score' && 'Alpha\'s Verdict'}
+              {step === 'mentor_chat' && 'Pre-Trade Review'}
+              {step === 'confirmation' && 'Confirm Trade'}
+              {step === 'post_trade' && 'Move Evaluated'}
+            </h1>
+            {/* Trade mode toggle */}
+            <div
+              onClick={() => setTradeMode(tradeMode === 'learning' ? 'simulation' : 'learning')}
+              style={{
+                display: 'flex', alignItems: 'center', background: 'var(--surface)',
+                border: '1px solid var(--border)', borderRadius: '999px',
+                padding: '2px', cursor: 'pointer', userSelect: 'none', flexShrink: 0,
+              }}
+              title={tradeMode === 'learning' ? 'Switch to Simulation mode' : 'Switch to Learning mode'}
+            >
+              {(['learning', 'simulation'] as const).map((mode) => (
+                <span key={mode} style={{
+                  padding: '4px 10px', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700,
+                  background: tradeMode === mode ? 'var(--accent)' : 'transparent',
+                  color: tradeMode === mode ? 'white' : 'var(--text-muted)',
+                  transition: 'all 0.2s ease',
+                }}>
+                  {mode === 'learning' ? 'Learn' : 'Sim'}
+                </span>
+              ))}
+            </div>
+          </div>
           {step !== 'search' && step !== 'post_trade' && (
             <div style={{ display: 'flex', gap: '4px', marginTop: '6px' }}>
               {(['preview', 'trade_form', 'mentor_chat', 'confirmation'] as TradeStep[]).map((s, i) => {

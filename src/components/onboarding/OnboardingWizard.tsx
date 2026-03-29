@@ -66,22 +66,61 @@ const STEPS: Step[] = [
   },
 ];
 
+const LEVEL_OPTIONS = [
+  {
+    level: 1,
+    name: 'Paper Rookie',
+    icon: '♙',
+    description: 'Complete beginner. I want the mentor to guide every step.',
+  },
+  {
+    level: 2,
+    name: 'Market Observer',
+    icon: '♘',
+    description: "I've read about stocks but never made a real trade.",
+  },
+  {
+    level: 3,
+    name: 'Thesis Builder',
+    icon: '♗',
+    description: "I understand how stocks work and have a few ideas I'd like to try.",
+  },
+  {
+    level: 4,
+    name: 'Risk Aware',
+    icon: '♖',
+    description: "I've traded before and want less hand-holding, more feedback.",
+  },
+  {
+    level: 5,
+    name: 'Pattern Spotter',
+    icon: '♕',
+    description: 'Experienced trader looking to sharpen my thinking with AI feedback.',
+  },
+];
+
 interface OnboardingWizardProps {
   startingCapital: number;
-  onComplete: () => void;
+  onComplete: (startingLevel: number) => void;
 }
+
+// Level selection is a special step after the regular STEPS
+const LEVEL_SELECT_STEP = STEPS.length;
+const TOTAL_STEPS = STEPS.length + 1;
 
 export default function OnboardingWizard({ startingCapital, onComplete }: OnboardingWizardProps) {
   const [step, setStep] = useState(0);
+  const [selectedLevel, setSelectedLevel] = useState(1);
   const navigate = useNavigate();
-  const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
-  const pct = ((step + 1) / STEPS.length) * 100;
+  const isLevelSelect = step === LEVEL_SELECT_STEP;
+  const current = isLevelSelect ? null : STEPS[step];
+  const isLast = step === LEVEL_SELECT_STEP;
+  const pct = ((step + 1) / TOTAL_STEPS) * 100;
 
   const handleNext = () => {
     if (isLast) {
       markWizardSeen();
-      onComplete();
+      onComplete(selectedLevel);
       navigate('/trade?ticker=AAPL');
     } else {
       setStep((s) => s + 1);
@@ -90,7 +129,7 @@ export default function OnboardingWizard({ startingCapital, onComplete }: Onboar
 
   const handleSkip = () => {
     markWizardSeen();
-    onComplete();
+    onComplete(1);
   };
 
   return (
@@ -188,7 +227,7 @@ export default function OnboardingWizard({ startingCapital, onComplete }: Onboar
 
       {/* Step indicator dots */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', padding: '4px 20px', flexShrink: 0 }}>
-        {STEPS.map((_, i) => (
+        {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div
             key={i}
             style={{
@@ -211,97 +250,178 @@ export default function OnboardingWizard({ startingCapital, onComplete }: Onboar
           flexDirection: 'column',
           padding: '24px 24px 32px',
           animation: 'slideInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both',
+          overflowY: isLevelSelect ? 'auto' : 'visible',
         }}
       >
-        {/* Icon */}
-        <div
-          style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '24px',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(124,58,237,0.08) 100%)',
-            border: '1px solid rgba(99,102,241,0.22)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '2.5rem',
-            marginBottom: '28px',
-          }}
-        >
-          {current.icon}
-        </div>
-
-        {/* Step label */}
-        <p
-          style={{
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            color: 'var(--accent)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.07em',
-            marginBottom: '10px',
-          }}
-        >
-          {current.label}
-        </p>
-
-        {/* Title */}
-        <h1
-          style={{
-            fontSize: '1.6rem',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            lineHeight: 1.22,
-            letterSpacing: '-0.02em',
-            marginBottom: '18px',
-          }}
-        >
-          {current.title}
-        </h1>
-
-        {/* Body */}
-        <p
-          style={{
-            fontSize: '0.975rem',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.68,
-            marginBottom: '24px',
-            flex: 1,
-          }}
-        >
-          {current.body}
-        </p>
-
-        {/* Highlight box */}
-        {current.highlight && (
-          <div
-            style={{
-              background: 'rgba(99,102,241,0.08)',
-              border: '1px solid rgba(99,102,241,0.20)',
-              borderLeft: '3px solid var(--accent)',
-              borderRadius: '14px',
-              padding: '14px 16px',
-              marginBottom: '32px',
-            }}
-          >
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-primary)', lineHeight: 1.6, margin: 0, fontWeight: 500 }}>
-              {/* Inject capital amount on step 4 */}
-              {current.highlight.includes('Practice trading')
-                ? current.highlight.replace(
-                    "your real budget number",
-                    `$${startingCapital.toLocaleString()}`
-                  )
-                : current.highlight}
+        {isLevelSelect ? (
+          /* ── Level selector ── */
+          <>
+            <p
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: 'var(--accent)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.07em',
+                marginBottom: '10px',
+              }}
+            >
+              Your starting point
             </p>
-          </div>
-        )}
+            <h1
+              style={{
+                fontSize: '1.5rem',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                lineHeight: 1.22,
+                letterSpacing: '-0.02em',
+                marginBottom: '8px',
+              }}
+            >
+              How experienced are you?
+            </h1>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: '20px' }}>
+              Pick the level that fits you best. Alpha will calibrate its guidance accordingly — you can always change this later.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {LEVEL_OPTIONS.map((opt) => {
+                const isSelected = selectedLevel === opt.level;
+                return (
+                  <button
+                    key={opt.level}
+                    onClick={() => setSelectedLevel(opt.level)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '12px',
+                      padding: '14px 16px',
+                      borderRadius: '16px',
+                      border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`,
+                      background: isSelected ? 'rgba(99,102,241,0.10)' : 'var(--surface)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.4rem', lineHeight: 1, flexShrink: 0, marginTop: '1px' }}>
+                      {opt.icon}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: isSelected ? 'var(--accent)' : 'var(--text-primary)' }}>
+                          {opt.name}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', background: 'var(--surface-elevated)', padding: '1px 7px', borderRadius: '999px' }}>
+                          Lv.{opt.level}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
+                        {opt.description}
+                      </p>
+                    </div>
+                    {isSelected && (
+                      <span style={{ fontSize: '1rem', color: 'var(--accent)', flexShrink: 0, marginTop: '2px' }}>✓</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ flex: 1, minHeight: '16px' }} />
+          </>
+        ) : current ? (
+          /* ── Regular educational step ── */
+          <>
+            {/* Icon */}
+            <div
+              style={{
+                width: '80px',
+                height: '80px',
+                borderRadius: '24px',
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(124,58,237,0.08) 100%)',
+                border: '1px solid rgba(99,102,241,0.22)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '2.5rem',
+                marginBottom: '28px',
+              }}
+            >
+              {current.icon}
+            </div>
+
+            {/* Step label */}
+            <p
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: 'var(--accent)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.07em',
+                marginBottom: '10px',
+              }}
+            >
+              {current.label}
+            </p>
+
+            {/* Title */}
+            <h1
+              style={{
+                fontSize: '1.6rem',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                lineHeight: 1.22,
+                letterSpacing: '-0.02em',
+                marginBottom: '18px',
+              }}
+            >
+              {current.title}
+            </h1>
+
+            {/* Body */}
+            <p
+              style={{
+                fontSize: '0.975rem',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.68,
+                marginBottom: '24px',
+                flex: 1,
+              }}
+            >
+              {current.body}
+            </p>
+
+            {/* Highlight box */}
+            {current.highlight && (
+              <div
+                style={{
+                  background: 'rgba(99,102,241,0.08)',
+                  border: '1px solid rgba(99,102,241,0.20)',
+                  borderLeft: '3px solid var(--accent)',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
+                  marginBottom: '32px',
+                }}
+              >
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-primary)', lineHeight: 1.6, margin: 0, fontWeight: 500 }}>
+                  {current.highlight.includes('Practice trading')
+                    ? current.highlight.replace(
+                        "your real budget number",
+                        `$${startingCapital.toLocaleString()}`
+                      )
+                    : current.highlight}
+                </p>
+              </div>
+            )}
+          </>
+        ) : null}
       </div>
 
       {/* Bottom CTA */}
       <div style={{ padding: '0 24px 40px', flexShrink: 0 }}>
         {step > 0 && (
           <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-            Step {step + 1} of {STEPS.length}
+            Step {step + 1} of {TOTAL_STEPS}
           </p>
         )}
         <button
@@ -317,12 +437,12 @@ export default function OnboardingWizard({ startingCapital, onComplete }: Onboar
             boxShadow: isLast ? '0 0 28px rgba(99,102,241,0.4)' : 'none',
           }}
         >
-          {isLast ? `Make my first move →` : 'Got it, next →'}
+          {isLast ? `Start as ${LEVEL_OPTIONS.find(o => o.level === selectedLevel)?.name} →` : 'Got it, next →'}
         </button>
 
         {step === 0 && (
           <p style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '14px' }}>
-            6-step intro · Takes about 2 minutes
+            7-step intro · Takes about 2 minutes
           </p>
         )}
       </div>

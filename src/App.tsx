@@ -5,6 +5,7 @@ import './styles/animations.css';
 
 import { useAuth } from './hooks/useAuth';
 import { invalidatePortfolioCache } from './hooks/usePortfolio';
+import { XP_THRESHOLDS } from './config/constants';
 import { GuidanceProvider } from './context/GuidanceContext';
 import AppShell from './components/layout/AppShell';
 import WelcomeScreen from './components/onboarding/WelcomeScreen';
@@ -204,11 +205,20 @@ function AuthGate() {
 
   // Show onboarding wizard for new users who haven't seen it yet
   if (!wizardDone && !hasSeenWizard()) {
+    const handleWizardComplete = async (startingLevel: number) => {
+      const clampedLevel = Math.max(1, Math.min(10, startingLevel));
+      const startingXP = XP_THRESHOLDS[clampedLevel - 1] ?? 0;
+      const xpToNextLevel = clampedLevel < XP_THRESHOLDS.length
+        ? XP_THRESHOLDS[clampedLevel] - startingXP
+        : 0;
+      await updateUser({ level: clampedLevel, xp: startingXP, xpToNextLevel });
+      setWizardDone(true);
+    };
     return (
       <div className="app-container">
         <OnboardingWizard
           startingCapital={user.startingCapital || 500}
-          onComplete={() => setWizardDone(true)}
+          onComplete={handleWizardComplete}
         />
       </div>
     );

@@ -66,8 +66,6 @@ function DesktopSidebar({
   onSignIn,
   theme,
   toggleTheme,
-  tradeMode,
-  setTradeMode,
   startTour,
 }: {
   user: User | null;
@@ -75,8 +73,6 @@ function DesktopSidebar({
   onSignIn?: () => void;
   theme: 'dark' | 'light';
   toggleTheme: () => void;
-  tradeMode: string;
-  setTradeMode: (mode: 'learning' | 'simulation') => void;
   startTour: (step: number) => void;
 }) {
   const navigate = useNavigate();
@@ -116,26 +112,6 @@ function DesktopSidebar({
           </span>
         </div>
 
-        {/* Trade mode toggle */}
-        <div
-          onClick={() => setTradeMode(tradeMode === 'learning' ? 'simulation' : 'learning')}
-          style={{
-            display: 'flex', alignItems: 'center', background: 'var(--surface)',
-            border: '1px solid var(--border)', borderRadius: '999px',
-            padding: '2px', cursor: 'pointer', userSelect: 'none', width: 'fit-content',
-          }}
-        >
-          {(['learning', 'simulation'] as const).map((mode) => (
-            <span key={mode} style={{
-              padding: '4px 10px', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700,
-              background: tradeMode === mode ? 'var(--accent)' : 'transparent',
-              color: tradeMode === mode ? 'white' : 'var(--text-muted)',
-              transition: 'all 0.2s ease',
-            }}>
-              {mode === 'learning' ? 'Learn' : 'Sim'}
-            </span>
-          ))}
-        </div>
       </div>
 
       {/* Nav items */}
@@ -248,7 +224,7 @@ function DesktopSidebar({
 }
 
 export default function AppShell({ children, user, isGuest, onSignIn }: AppShellPropsExtended) {
-  const { startTour, maybeStartTour, hasSeenTour, tradeMode, setTradeMode } = useGuidance();
+  const { startTour, maybeStartTour, hasSeenTour } = useGuidance();
   const { theme, toggleTheme } = useTheme();
   const isDesktop = useIsDesktop();
   const level = user?.level ?? 1;
@@ -270,8 +246,6 @@ export default function AppShell({ children, user, isGuest, onSignIn }: AppShell
           onSignIn={onSignIn}
           theme={theme}
           toggleTheme={toggleTheme}
-          tradeMode={tradeMode}
-          setTradeMode={setTradeMode}
           startTour={startTour}
         />
 
@@ -382,42 +356,6 @@ export default function AppShell({ children, user, isGuest, onSignIn }: AppShell
         {/* Right: theme + mode toggle + help + level */}
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {/* Trade mode toggle */}
-            <div
-              onClick={() => setTradeMode(tradeMode === 'learning' ? 'simulation' : 'learning')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '999px',
-                padding: '2px',
-                cursor: 'pointer',
-                gap: '0',
-                userSelect: 'none',
-              }}
-              title={tradeMode === 'learning' ? 'Switch to Simulation mode' : 'Switch to Learning mode'}
-            >
-              {(['learning', 'simulation'] as const).map((mode) => (
-                <span
-                  key={mode}
-                  style={{
-                    padding: '4px 9px',
-                    borderRadius: '999px',
-                    fontSize: '0.68rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.02em',
-                    background: tradeMode === mode ? 'var(--accent)' : 'transparent',
-                    color: tradeMode === mode ? 'white' : 'var(--text-muted)',
-                    transition: 'all 0.2s ease',
-                    textTransform: 'capitalize',
-                  }}
-                >
-                  {mode === 'learning' ? 'Learn' : 'Sim'}
-                </span>
-              ))}
-            </div>
-
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}

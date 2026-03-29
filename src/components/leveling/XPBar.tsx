@@ -2,6 +2,7 @@ import { useState } from 'react';
 import LevelBadge from './LevelBadge';
 import InfoButton from '../guidance/InfoButton';
 import BottomSheet from '../guidance/BottomSheet';
+import { XP_THRESHOLDS } from '../../config/constants';
 
 interface XPBarProps {
   level: number;
@@ -31,10 +32,16 @@ function getLevelColor(level: number): string {
 
 export default function XPBar({ level, xp, xpToNextLevel }: XPBarProps) {
   const [open, setOpen] = useState(false);
-  const pct = level >= 10 ? 100 : Math.min((xp / xpToNextLevel) * 100, 100);
+  const isMaxLevel = level >= 10;
+  // Calculate progress within the current level range
+  const currentLevelThreshold = XP_THRESHOLDS[level - 1] ?? 0;
+  const xpInLevel = xp - currentLevelThreshold;
+  const xpForLevel = xpToNextLevel; // remaining XP is the gap for this level progress
+  const pct = isMaxLevel ? 100 : Math.min(xpForLevel > 0 ? ((xpInLevel / (xpInLevel + xpForLevel)) * 100) : 100, 100);
   const color = getLevelColor(level);
   const levelName = LEVEL_NAMES[level] || 'Paper Rookie';
-  const isMaxLevel = level >= 10;
+  // Next level threshold for display
+  const nextThreshold = isMaxLevel ? xp : xp + xpToNextLevel;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -57,7 +64,7 @@ export default function XPBar({ level, xp, xpToNextLevel }: XPBarProps) {
                 color: 'var(--xp-gold)',
               }}
             >
-              {isMaxLevel ? 'MAX' : `${xp.toLocaleString()} / ${xpToNextLevel.toLocaleString()}`}
+              {isMaxLevel ? 'MAX' : `${xp.toLocaleString()} / ${nextThreshold.toLocaleString()} XP`}
             </span>
           </div>
 
@@ -92,7 +99,7 @@ export default function XPBar({ level, xp, xpToNextLevel }: XPBarProps) {
       {/* XP label below bar */}
       {!isMaxLevel && (
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, paddingLeft: '52px' }}>
-          {(xpToNextLevel - xp).toLocaleString()} XP to Level {level + 1}
+          {xpToNextLevel.toLocaleString()} XP to Level {level + 1}
         </p>
       )}
 
