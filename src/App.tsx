@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/globals.css';
 import './styles/animations.css';
 
@@ -136,9 +136,11 @@ function AuthGate() {
 }
 
 export default function App() {
+  const Router = import.meta.env.PROD ? HashRouter : BrowserRouter;
+
   return (
-    <BrowserRouter>
+    <Router>
       <AuthGate />
-    </BrowserRouter>
+    </Router>
   );
 }

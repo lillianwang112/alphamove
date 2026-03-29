@@ -1,0 +1,1 @@
+import{B as e,N as t,p as n,v as r}from"./index.esm-Cf6bWKdC.js";export{t as Timestamp,e as collection,n as getDocs,r as updateDoc};
