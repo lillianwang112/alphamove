@@ -105,6 +105,9 @@ export function useAuth() {
       _authResolved = false;
       setUser(null);
       setFirebaseUser(null);
+      // Clear onboarding localStorage so next guest session goes through onboarding
+      window.localStorage.removeItem('alphamove.wizardSeen');
+      window.localStorage.removeItem('alphamove.tourSeen');
     } catch (err) {
       console.error('signOut error:', err);
       throw err;
