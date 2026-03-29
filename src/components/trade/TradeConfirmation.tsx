@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import BottomSheet from '../guidance/BottomSheet';
 import InfoButton from '../guidance/InfoButton';
-import type { OrderType } from './TradeForm';
+import type { OrderType, TimeInForce } from './TradeForm';
 
 interface TradeConfirmationProps {
   action: 'buy' | 'sell';
@@ -10,6 +10,8 @@ interface TradeConfirmationProps {
   price: number;
   total: number;
   orderType?: OrderType;
+  timeInForce?: TimeInForce;
+  trailingPct?: number;
   onConfirm: () => void;
   onCancel: () => void;
   loading: boolean;
@@ -18,7 +20,17 @@ interface TradeConfirmationProps {
 const ORDER_LABELS: Record<string, string> = {
   market: 'Market Order',
   limit: 'Limit Order',
-  stop_loss: 'Stop-Loss',
+  stop: 'Stop (Market)',
+  stop_limit: 'Stop Limit',
+  trailing_stop: 'Trailing Stop',
+};
+
+const TIF_LABELS: Record<string, string> = {
+  day: 'Day',
+  gtc: 'Good Till Cancelled',
+  day_ext: 'Day + Extended Hours',
+  ioc: 'Immediate or Cancel',
+  fok: 'Fill or Kill',
 };
 
 export default function TradeConfirmation({
@@ -28,6 +40,8 @@ export default function TradeConfirmation({
   price,
   total,
   orderType = 'market',
+  timeInForce,
+  trailingPct,
   onConfirm,
   onCancel,
   loading,
@@ -119,9 +133,18 @@ export default function TradeConfirmation({
             value: (
               <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
                 {ORDER_LABELS[orderType] ?? 'Market Order'}
+                {orderType === 'trailing_stop' && trailingPct ? ` · ${trailingPct}%` : ''}
               </span>
             ),
           },
+          ...(timeInForce && timeInForce !== 'day' ? [{
+            label: 'Timing',
+            value: (
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                {TIF_LABELS[timeInForce] ?? timeInForce}
+              </span>
+            ),
+          }] : []),
           {
             label: 'Ticker',
             value: (
@@ -153,7 +176,7 @@ export default function TradeConfirmation({
               </span>
             ),
           },
-        ].map((row, i) => (
+        ].map((row, i, arr) => (
           <div
             key={row.label}
             style={{
@@ -161,7 +184,7 @@ export default function TradeConfirmation({
               justifyContent: 'space-between',
               alignItems: 'center',
               padding: '12px 0',
-              borderBottom: i < 4 ? '1px solid var(--border)' : 'none',
+              borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
             }}
           >
             <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>

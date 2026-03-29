@@ -19,7 +19,7 @@ import AssetClassSelector from '../components/trade/AssetClassSelector';
 import OptionsChain from '../components/trade/OptionsChain';
 import { getCryptoQuote, getCryptoName } from '../services/cryptoService';
 import type { TradeAction, MentorMessage, MentorConversation, MoveRating, AssetClass, OptionContract } from '../types';
-import type { OrderType } from '../components/trade/TradeForm';
+import type { OrderType, TimeInForce } from '../components/trade/TradeForm';
 
 type TradeStep =
   | 'search'
@@ -84,6 +84,8 @@ export default function TradePage() {
   // Order type
   const [orderType, setOrderType] = useState<OrderType>('market');
   const [limitPrice, setLimitPrice] = useState<number | undefined>(undefined);
+  const [timeInForce, setTimeInForce] = useState<TimeInForce>('day');
+  const [trailingPct, setTrailingPct] = useState<number | undefined>(undefined);
 
   // Mentor chat
   const [conversation, setConversation] = useState<MentorConversation | null>(null);
@@ -168,10 +170,12 @@ export default function TradePage() {
   const handleBuy = () => { setAction('buy'); setStep('trade_form'); };
   const handleSell = () => { setAction('sell'); setStep('trade_form'); };
 
-  const handleSharesSubmit = async (numShares: number, ot: OrderType, lp?: number) => {
+  const handleSharesSubmit = async (numShares: number, ot: OrderType, lp?: number, tif?: TimeInForce, trailPct?: number) => {
     setShares(numShares);
     setOrderType(ot);
     setLimitPrice(lp);
+    if (tif) setTimeInForce(tif);
+    if (trailPct !== undefined) setTrailingPct(trailPct);
 
     // Simulation mode: skip mentor, go straight to confirmation
     if (tradeMode === 'simulation') {
@@ -435,6 +439,8 @@ export default function TradePage() {
     setShares(0);
     setOrderType('market');
     setLimitPrice(undefined);
+    setTimeInForce('day');
+    setTrailingPct(undefined);
     setAssetClass('stock');
     setOptionContract(null);
   };
@@ -885,6 +891,8 @@ export default function TradePage() {
             ? optionTotalCost
             : shares * ((orderType !== 'market' && limitPrice) ? limitPrice : quote.price)}
           orderType={orderType}
+          timeInForce={timeInForce}
+          trailingPct={trailingPct}
           onConfirm={handleConfirmTrade}
           onCancel={() => assetClass === 'option' ? setStep('preview') : setStep('mentor_chat')}
           loading={tradeLoading}
