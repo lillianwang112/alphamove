@@ -224,8 +224,8 @@ src/
 
 ## 👤 About
 
-Built by **Lillian Wang** — Princeton University, Spring 2026.
+Built by **Lillian Wang** and **Heidi Hu** — Princeton University, Spring 2026
 
 AlphaMove started from a simple frustration: every investing app either treats you like you already know what you're doing, or gives you a toy with no real feedback loop. The goal was to build the mentor that most people never get — one that asks the right questions, rates your thinking honestly, and gets out of the way once you don't need it anymore.
 
-Questions or feedback: [lw3319@princeton.edu](mailto:lw3319@princeton.edu)
+Questions or feedback: [lw3319@princeton.edu](mailto:lw3319@princeton.edu), [hh8898@princeton.edu](mailto:hh8898@princeton.edu)
