@@ -6,5 +6,7 @@ export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? '/alphamove/' : '/',
   build: {
     target: ['es2020', 'safari14'],
+    outDir: 'docs',
+    emptyOutDir: true,
   },
 }));
