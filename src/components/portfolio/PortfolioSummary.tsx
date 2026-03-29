@@ -3,9 +3,11 @@ import type { Portfolio } from '../../types';
 import BottomSheet from '../guidance/BottomSheet';
 import InfoButton from '../guidance/InfoButton';
 import CoachPanel from '../guidance/CoachPanel';
+import AnimatedNumber from '../shared/AnimatedNumber';
 
 interface PortfolioSummaryProps {
   portfolio: Portfolio;
+  sparklineData?: number[];
 }
 
 function formatCurrency(value: number): string {
@@ -20,7 +22,49 @@ function formatPct(value: number): string {
   return `${value >= 0 ? '+' : ''}${(value * 100).toFixed(2)}%`;
 }
 
-export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
+function Sparkline({ data, isPositive, height = 56 }: { data: number[]; isPositive: boolean; height?: number }) {
+  if (!data || data.length < 2) return null;
+  const W = 280;
+  const H = height;
+  const padY = 4;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const toX = (i: number) => (i / (data.length - 1)) * W;
+  const toY = (v: number) => H - padY - ((v - min) / range) * (H - padY * 2);
+  const pts = data.map((p, i) => `${toX(i).toFixed(1)},${toY(p).toFixed(1)}`);
+  const linePath = `M ${pts.join(' L ')}`;
+  const areaPath = `M 0,${H} L ${pts.join(' L ')} L ${W},${H} Z`;
+  const color = isPositive ? '#22C55E' : '#EF4444';
+  const gradId = `spark_${isPositive ? 'up' : 'dn'}`;
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      style={{ width: '100%', height: `${height}px`, display: 'block', marginTop: '12px' }}
+    >
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#${gradId})`} />
+      <path d={linePath} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle
+        cx={toX(data.length - 1)}
+        cy={toY(data[data.length - 1])}
+        r="3"
+        fill={color}
+        stroke="#0A0A0F"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+export default function PortfolioSummary({ portfolio, sparklineData }: PortfolioSummaryProps) {
   const [open, setOpen] = useState<null | 'value' | 'cash'>(null);
   const [coachOpen, setCoachOpen] = useState(false);
   const isPositive = portfolio.allTimeReturn >= 0;
@@ -74,18 +118,18 @@ export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
-          <span
+          <AnimatedNumber
+            value={portfolio.totalValue}
+            format={(v) => `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: '2.25rem',
               fontWeight: 600,
               color: 'var(--text-primary)',
               letterSpacing: '-0.03em',
-              lineHeight: 1,
+              lineHeight: '1',
             }}
-          >
-            ${portfolio.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
+          />
           <span
             style={{
               fontSize: '0.875rem',
@@ -102,6 +146,11 @@ export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
           </span>
         </div>
       </div>
+
+      {/* Sparkline */}
+      {sparklineData && sparklineData.length >= 2 && (
+        <Sparkline data={sparklineData} isPositive={isPositive} />
+      )}
 
       <div
         style={{
@@ -133,16 +182,17 @@ export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
           >
             Today
           </p>
-          <p
+          <AnimatedNumber
+            value={portfolio.dayChange}
+            format={(v) => `${v >= 0 ? '+' : '-'}$${Math.abs(v).toFixed(2)}`}
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: '1rem',
               fontWeight: 600,
               color: isDayPositive ? 'var(--success)' : 'var(--danger)',
+              display: 'block',
             }}
-          >
-            {isDayPositive ? '+' : '-'}{formatCurrency(portfolio.dayChange)}
-          </p>
+          />
           <p
             style={{
               fontFamily: 'var(--font-mono)',
@@ -172,19 +222,17 @@ export default function PortfolioSummary({ portfolio }: PortfolioSummaryProps) {
             </p>
             <InfoButton label="?" onClick={() => setOpen('cash')} />
           </div>
-          <p
+          <AnimatedNumber
+            value={portfolio.totalValue - portfolio.totalInvested}
+            format={(v) => `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: '1rem',
               fontWeight: 600,
               color: 'var(--text-primary)',
+              display: 'block',
             }}
-          >
-            ${(portfolio.totalValue - portfolio.totalInvested).toLocaleString('en-US', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </p>
+          />
           <p
             style={{
               fontSize: '0.8rem',

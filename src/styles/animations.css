@@ -1,5 +1,49 @@
 /* ─── Keyframe Animations ────────────────────────── */
 
+/* Particle burst for level-up */
+@keyframes particle-burst {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateX(0);
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateX(var(--distance));
+  }
+}
+
+/* Level up badge pop */
+@keyframes levelUpBadge {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-15deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15) rotate(5deg);
+  }
+  80% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Screen shake for blunder/brilliant */
+@keyframes screenShake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-3px) rotate(-0.5deg); }
+  30% { transform: translateX(3px) rotate(0.5deg); }
+  45% { transform: translateX(-2px); }
+  60% { transform: translateX(2px); }
+  75% { transform: translateX(-1px); }
+}
+
 /* Slide in from bottom */
 @keyframes slideInUp {
   from {
