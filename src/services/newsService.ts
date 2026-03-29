@@ -10,15 +10,24 @@ import type { MorningBrief, Portfolio } from '../types';
 import { getCompanyNews, getMarketNews } from './marketService';
 import { generateMorningBriefAI, buildMorningBrief } from './mentorService';
 
+// ─── In-memory demo cache ─────────────────────────
+const _briefCache = new Map<string, MorningBrief>();
+
 // ─── Get Today's Brief ────────────────────────────
 
 export async function getMorningBrief(uid: string): Promise<MorningBrief | null> {
+  const cacheKey = `${uid}-${new Date().toISOString().split('T')[0]}`;
+  const cached = _briefCache.get(cacheKey);
+  if (cached) return cached;
+
   try {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const briefRef = doc(db, 'users', uid, 'briefs', today);
     const snap = await getDoc(briefRef);
     if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() } as MorningBrief;
+    const brief = { id: snap.id, ...snap.data() } as MorningBrief;
+    _briefCache.set(cacheKey, brief);
+    return brief;
   } catch (err) {
     console.error('getMorningBrief error:', err);
     return null;
@@ -61,7 +70,9 @@ export async function generateAndSaveMorningBrief(
   const briefRef = doc(db, 'users', uid, 'briefs', today);
   await setDoc(briefRef, briefData);
 
-  return { id: today, ...briefData };
+  const brief = { id: today, ...briefData };
+  _briefCache.set(`${uid}-${today}`, brief);
+  return brief;
 }
 
 // suppress unused import warning

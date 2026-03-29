@@ -79,7 +79,7 @@ function timeAgo(ts: { seconds: number } | null): string {
 }
 
 const RANGE_DAYS: Record<TimeRange, number> = {
-  '1W': 7, '1M': 30, '3M': 90, '6M': 182, '1Y': 365,
+  '1W': 7, '1M': 30, '3M': 90, '6M': 182, '1Y': 365, '10Y': 3650,
 };
 
 export default function StockDetail({
@@ -167,7 +167,7 @@ export default function StockDetail({
   const allStats = [...quoteStats, ...metricsStats, ...profileStats];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0', animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0', animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both', userSelect: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}>
 
       {/* ── Header card ── */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', marginBottom: '12px' }}>

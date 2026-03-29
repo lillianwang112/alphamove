@@ -48,6 +48,13 @@ function formatDate(date: Date): string {
   return date.toISOString().split('T')[0]; // YYYY-MM-DD
 }
 
+// ─── In-memory demo cache ─────────────────────────
+const _profileCache = new Map<string, CompanyProfileResult>();
+const _metricsCache = new Map<string, StockMetrics>();
+const _candleCache = new Map<string, { result: CandleResult; exp: number }>();
+const _newsCache = new Map<string, { result: NewsEvent[]; exp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // ─── Market Service Functions ─────────────────────
 
 export async function getQuote(ticker: string): Promise<QuoteResult> {
@@ -96,6 +103,9 @@ export async function searchTicker(query: string): Promise<TickerSearchResult[]>
 }
 
 export async function getCompanyProfile(ticker: string): Promise<CompanyProfileResult> {
+  const cached = _profileCache.get(ticker);
+  if (cached) return cached;
+
   const data = await finnhubFetch<{
     name: string;
     ticker: string;
@@ -108,7 +118,7 @@ export async function getCompanyProfile(ticker: string): Promise<CompanyProfileR
     ipo?: string;
   }>(`/stock/profile2?symbol=${encodeURIComponent(ticker)}`);
 
-  return {
+  const result: CompanyProfileResult = {
     name: data.name || ticker,
     ticker: data.ticker || ticker,
     logo: data.logo || '',
@@ -119,9 +129,15 @@ export async function getCompanyProfile(ticker: string): Promise<CompanyProfileR
     exchange: data.exchange || '',
     ipo: data.ipo || '',
   };
+  _profileCache.set(ticker, result);
+  return result;
 }
 
 export async function getCompanyNews(ticker: string, daysBack = 7): Promise<NewsEvent[]> {
+  const cacheKey = `${ticker}-${daysBack}`;
+  const hit = _newsCache.get(cacheKey);
+  if (hit && Date.now() < hit.exp) return hit.result;
+
   const to = new Date();
   const from = new Date();
   from.setDate(from.getDate() - daysBack);
@@ -138,7 +154,7 @@ export async function getCompanyNews(ticker: string, daysBack = 7): Promise<News
 
   if (!Array.isArray(data)) return [];
 
-  return data.slice(0, 10).map((item) => ({
+  const result = data.slice(0, 10).map((item) => ({
     id: String(item.id),
     headline: item.headline || '',
     summary: item.summary || '',
@@ -149,6 +165,8 @@ export async function getCompanyNews(ticker: string, daysBack = 7): Promise<News
     mentorAnalysis: '',         // filled by AI
     impactOnPortfolio: '',      // filled by AI
   }));
+  _newsCache.set(cacheKey, { result, exp: Date.now() + CACHE_TTL });
+  return result;
 }
 
 // ─── Candle Data ──────────────────────────────────
@@ -161,6 +179,10 @@ export interface CandleResult {
 }
 
 export async function getStockCandles(ticker: string, days = 30): Promise<CandleResult> {
+  const cacheKey = `${ticker}-${days}`;
+  const hit = _candleCache.get(cacheKey);
+  if (hit && Date.now() < hit.exp) return hit.result;
+
   const to = Math.floor(Date.now() / 1000);
   const from = to - days * 24 * 60 * 60;
 
@@ -177,12 +199,9 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
       return { closes: [], timestamps: [], highs: [], lows: [] };
     }
 
-    return {
-      closes: data.c,
-      timestamps: data.t,
-      highs: data.h,
-      lows: data.l,
-    };
+    const result: CandleResult = { closes: data.c, timestamps: data.t, highs: data.h, lows: data.l };
+    _candleCache.set(cacheKey, { result, exp: Date.now() + CACHE_TTL });
+    return result;
   } catch {
     return { closes: [], timestamps: [], highs: [], lows: [] };
   }
@@ -202,6 +221,9 @@ export interface StockMetrics {
 }
 
 export async function getStockMetrics(ticker: string): Promise<StockMetrics> {
+  const cached = _metricsCache.get(ticker);
+  if (cached) return cached;
+
   try {
     const data = await finnhubFetch<{
       metric: {
@@ -216,7 +238,7 @@ export async function getStockMetrics(ticker: string): Promise<StockMetrics> {
       };
     }>(`/stock/metric?symbol=${encodeURIComponent(ticker)}&metric=all`);
     const m = data.metric || {};
-    return {
+    const result: StockMetrics = {
       peRatio: m.peBasicExclExtraTTM ?? null,
       beta: m.beta ?? null,
       high52w: m['52WeekHigh'] ?? null,
@@ -226,6 +248,8 @@ export async function getStockMetrics(ticker: string): Promise<StockMetrics> {
       dividendYield: m.dividendYieldIndicatedAnnual ?? null,
       returnYTD: m.yearToDatePriceReturnDaily ?? null,
     };
+    _metricsCache.set(ticker, result);
+    return result;
   } catch {
     return { peRatio: null, beta: null, high52w: null, low52w: null, avgVolume10d: null, eps: null, dividendYield: null, returnYTD: null };
   }

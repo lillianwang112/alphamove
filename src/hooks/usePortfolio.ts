@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Portfolio, Position } from '../types';
+
+// ─── Module-level session cache ───────────────────
+const _portfolioCache = new Map<string, { positions: Position[]; portfolio: Portfolio; ts: number }>();
+const PORTFOLIO_TTL = 2 * 60 * 1000; // 2 minutes
+
+export function invalidatePortfolioCache(uid: string) {
+  _portfolioCache.delete(uid);
+}
 import {
   getPositions,
   calculatePortfolio,
@@ -15,6 +23,15 @@ export function usePortfolio(uid: string) {
 
   const loadPortfolio = useCallback(async () => {
     if (!uid) return;
+
+    const cached = _portfolioCache.get(uid);
+    if (cached && Date.now() - cached.ts < PORTFOLIO_TTL) {
+      setPositions(cached.positions);
+      setPortfolio(cached.portfolio);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const [rawPositions, userData] = await Promise.all([
@@ -28,6 +45,7 @@ export function usePortfolio(uid: string) {
       const computed = calculatePortfolio(rawPositions, currentCash, startingCapital);
       setPositions(rawPositions);
       setPortfolio(computed);
+      _portfolioCache.set(uid, { positions: rawPositions, portfolio: computed, ts: Date.now() });
     } catch (err) {
       console.error('loadPortfolio error:', err);
     } finally {

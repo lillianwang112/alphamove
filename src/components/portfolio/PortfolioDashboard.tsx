@@ -1,5 +1,6 @@
 import type { Portfolio, Position } from '../../types';
 import PortfolioSummary from './PortfolioSummary';
+import PortfolioCharts from './PortfolioCharts';
 import PositionCard from './PositionCard';
 
 interface PortfolioDashboardProps {
@@ -117,6 +118,9 @@ export default function PortfolioDashboard({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Summary */}
       <PortfolioSummary portfolio={portfolio} />
+
+      {/* Charts — allocation + P&L breakdown */}
+      <PortfolioCharts portfolio={portfolio} positions={positions} />
 
       {/* Positions */}
       <div>

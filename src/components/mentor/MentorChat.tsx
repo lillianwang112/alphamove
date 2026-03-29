@@ -148,19 +148,19 @@ export default function MentorChat({
         {messages.length === 0 && !loading && (
           <div
             style={{
-              flex: 1,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '12px',
-              padding: '40px 20px',
+              gap: '10px',
+              padding: '24px 20px',
               textAlign: 'center',
               opacity: 0.6,
+              minHeight: '120px',
             }}
           >
-            <span style={{ fontSize: '2rem' }}>♟</span>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: '1.75rem', lineHeight: 1 }}>♟</span>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.55, margin: 0 }}>
               Your mentor is ready to help you think through this trade.
             </p>
           </div>

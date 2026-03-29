@@ -124,7 +124,7 @@ export default function ProfilePage() {
             width: '64px',
             height: '64px',
             borderRadius: '50%',
-            background: `linear-gradient(135deg, ${levelColor}44, ${levelColor}18)`,
+            background: 'white',
             border: `2px solid ${levelColor}`,
             display: 'flex',
             flexDirection: 'column',
@@ -135,7 +135,7 @@ export default function ProfilePage() {
             gap: '1px',
           }}
         >
-          <span style={{ fontSize: '1.75rem', lineHeight: 1, color: levelColor }}>
+          <span style={{ fontSize: '1.75rem', lineHeight: 1, color: '#111' }}>
             {getChessPiece(level)}
           </span>
           <span style={{ fontSize: '0.58rem', fontFamily: 'var(--font-mono)', fontWeight: 700, color: levelColor, opacity: 0.7 }}>

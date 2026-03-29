@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 
-export type TimeRange = '1W' | '1M' | '3M' | '6M' | '1Y';
+export type TimeRange = '1W' | '1M' | '3M' | '6M' | '1Y' | '10Y';
 
 interface PriceChartProps {
   prices: number[];
@@ -13,14 +13,14 @@ interface PriceChartProps {
   firstPrice?: number;
 }
 
-const RANGES: TimeRange[] = ['1W', '1M', '3M', '6M', '1Y'];
+const RANGES: TimeRange[] = ['1W', '1M', '3M', '6M', '1Y', '10Y'];
 
 function formatScrubDate(ts: number | undefined, idx: number, total: number, range: TimeRange): string {
   let date: Date;
   if (ts) {
     date = new Date(ts * 1000);
   } else {
-    const daysMap: Record<TimeRange, number> = { '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365 };
+    const daysMap: Record<TimeRange, number> = { '1W': 7, '1M': 30, '3M': 90, '6M': 180, '1Y': 365, '10Y': 3650 };
     const days = daysMap[range];
     const msPerPoint = (days * 24 * 60 * 60 * 1000) / Math.max(total - 1, 1);
     date = new Date(Date.now() - (total - 1 - idx) * msPerPoint);
@@ -150,8 +150,10 @@ export default function PriceChart({
           overflow: 'hidden',
           touchAction: 'none',
           userSelect: 'none',
+          WebkitUserSelect: 'none',
           cursor: prices.length >= 2 ? 'crosshair' : 'default',
         }}
+        onPointerDown={(e) => e.preventDefault()}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
       >

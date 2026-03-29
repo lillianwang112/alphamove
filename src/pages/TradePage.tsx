@@ -16,6 +16,7 @@ import PostTradeCard from '../components/mentor/PostTradeCard';
 import TourAnchor from '../components/guidance/TourAnchor';
 import LearnSheet from '../components/guidance/LearnSheet';
 import AssetClassSelector from '../components/trade/AssetClassSelector';
+import MarketOverview from '../components/trade/MarketOverview';
 import OptionsChain from '../components/trade/OptionsChain';
 import { getCryptoQuote, getCryptoName } from '../services/cryptoService';
 import type { TradeAction, MentorMessage, MentorConversation, MoveRating, AssetClass, OptionContract } from '../types';
@@ -584,6 +585,9 @@ export default function TradePage() {
       {/* Search step */}
       {step === 'search' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'slideInUp 0.4s ease both' }}>
+          {/* Market overview — quick-tap any ticker to load it */}
+          <MarketOverview onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+
           {/* Asset class selector */}
           <AssetClassSelector
             value={assetClass}
