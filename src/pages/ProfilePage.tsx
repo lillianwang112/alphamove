@@ -111,16 +111,17 @@ export default function ProfilePage() {
       const existing = await getPositions(user.uid);
       await Promise.all(existing.map((p) => removePosition(user.uid, p.id)));
 
-      // Seed demo positions: AAPL (5 shares @ $175), NVDA (2 shares @ $480), MSFT (3 shares @ $415)
+      // Seed demo positions: realistic mix of winners and losers
       const demoPositions = [
-        { ticker: 'AAPL', companyName: 'Apple Inc.', shares: 5, avgCostBasis: 175, currentPrice: 189.5, marketValue: 947.5, totalReturn: 72.5, totalReturnPct: 0.0829 },
-        { ticker: 'NVDA', companyName: 'NVIDIA Corp.', shares: 2, avgCostBasis: 480, currentPrice: 875.4, marketValue: 1750.8, totalReturn: 790.8, totalReturnPct: 0.8237 },
-        { ticker: 'MSFT', companyName: 'Microsoft Corp.', shares: 3, avgCostBasis: 415, currentPrice: 432.6, marketValue: 1297.8, totalReturn: 52.8, totalReturnPct: 0.0424 },
+        { ticker: 'AAPL', companyName: 'Apple Inc.', shares: 3, avgCostBasis: 198, currentPrice: 182.3, marketValue: 546.9, totalReturn: -47.1, totalReturnPct: -0.0793 },
+        { ticker: 'NVDA', companyName: 'NVIDIA Corp.', shares: 1, avgCostBasis: 840, currentPrice: 875.4, marketValue: 875.4, totalReturn: 35.4, totalReturnPct: 0.0421 },
+        { ticker: 'MSFT', companyName: 'Microsoft Corp.', shares: 2, avgCostBasis: 415, currentPrice: 432.6, marketValue: 865.2, totalReturn: 35.2, totalReturnPct: 0.0424 },
+        { ticker: 'TSLA', companyName: 'Tesla Inc.', shares: 2, avgCostBasis: 320, currentPrice: 248.5, marketValue: 497.0, totalReturn: -143.0, totalReturnPct: -0.2234 },
       ];
 
-      const startingCapital = user.startingCapital || 500;
-      const totalInvested = 5 * 175 + 2 * 480 + 3 * 415;
-      const cashLeft = startingCapital > totalInvested ? startingCapital - totalInvested : 180;
+      const startingCapital = user.startingCapital || 1500;
+      const totalInvested = 3 * 198 + 1 * 840 + 2 * 415 + 2 * 320;
+      const cashLeft = startingCapital > totalInvested ? startingCapital - totalInvested : 215;
 
       for (const pos of demoPositions) {
         await addOrUpdatePosition(user.uid, {
@@ -135,7 +136,7 @@ export default function ProfilePage() {
         xp: 180,
         level: 1,
         xpToNextLevel: 20,
-        totalTrades: 3,
+        totalTrades: 4,
         streak: 3,
         lastActiveAt: Timestamp.now(),
       });
@@ -144,17 +145,18 @@ export default function ProfilePage() {
       // Pre-generate morning brief in localStorage
       const demoBrief = {
         greeting: 'Good morning! Here\'s what moved while you slept.',
-        portfolioSummary: 'NVDA surged 4.2% on strong AI chip demand data. AAPL held steady near all-time highs. MSFT gained 1.1% on Azure cloud growth. Your portfolio is up $87 overnight.',
+        portfolioSummary: 'Mixed overnight session for your portfolio. AAPL slipped another 0.6% on continued demand worries — your position is now down 7.9%. TSLA dropped 1.2% after a production miss in China, deepening your loss there to -22%. Bright spots: NVDA added 0.8% on AI infrastructure news, and MSFT held firm. Your portfolio is down $14 net overnight.',
         newsEvents: [
-          { headline: 'NVIDIA Q4 earnings beat by 18%', whyItMatters: 'Your 2 NVDA shares are up 82% — the AI thesis is playing out exactly as expected.', actionToConsider: 'Consider whether to take some profit or let it run.' },
-          { headline: 'Apple supply chain stabilizes in Asia', whyItMatters: 'Removes a key risk for your AAPL position entering Q1.', actionToConsider: 'No action needed — this is a positive signal.' },
+          { headline: 'Tesla misses Q1 China delivery estimates by 11%', whyItMatters: 'Your 2 TSLA shares are already down 22% — this miss adds more pressure. The question is whether this is a short-term production hiccup or a demand problem.', actionToConsider: 'Think about your original thesis for holding TSLA. Has anything changed that would make you reconsider?' },
+          { headline: 'Apple warns of softer iPhone upgrade cycle in 2026', whyItMatters: 'Your 3 AAPL shares are down 7.9% from your cost basis. This news could mean more near-term pressure before a recovery.', actionToConsider: 'Holding through a dip is a valid strategy — but make sure you have a reason, not just hope.' },
+          { headline: 'NVIDIA wins $4B data center contract with three hyperscalers', whyItMatters: 'Your 1 NVDA share is up 4.2% and this contract suggests sustained demand for AI chips well into 2027.', actionToConsider: 'The AI thesis that got you into NVDA is still intact. No action needed.' },
         ],
-        dailyQuestion: 'Your NVDA is up 82% since you bought it. At what point would you take some profit? That\'s called a "price target" — having one before a stock runs up helps you avoid greed.',
+        dailyQuestion: 'Your TSLA is down 22% and your AAPL is down 8%. At what point would you cut a losing position? That\'s called a "stop-loss" — deciding in advance how much loss you\'ll accept before exiting.',
       };
       localStorage.setItem('alphamove_demo_brief', JSON.stringify(demoBrief));
       invalidatePortfolioCache(user.uid);
 
-      alert('Demo portfolio seeded! AAPL (5 shares), NVDA (2 shares), MSFT (3 shares). XP set to 180 (close to Level 2). Refresh the app to see the changes.');
+      alert('Demo portfolio seeded! AAPL (3), NVDA (1), MSFT (2), TSLA (2). XP set to 180 (close to Level 2). Refresh the app to see the changes.');
     } catch (err) {
       console.error('Demo seed error:', err);
       alert('Seed failed — check console');

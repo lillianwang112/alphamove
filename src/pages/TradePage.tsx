@@ -68,7 +68,7 @@ interface PostTradeResult {
 export default function TradePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { beginnerMode, tradeMode, setTradeMode } = useGuidance();
   const { getQuote, getCompanyProfile } = useMarketData();
   const { startPreTradeChat, sendMessage, generatePostTradeAnalysis } = useMentor();
@@ -457,6 +457,9 @@ export default function TradePage() {
         reason: `${analysis.moveRating} move on ${ticker}`,
         tradeId: trade.id,
       });
+
+      // Sync local user state with new XP/level from Firestore
+      await updateUser({ xp: xpResult.newXP, level: xpResult.newLevel });
 
       if (xpResult.leveledUp) {
         setLevelUpData({ newLevel: xpResult.newLevel });
