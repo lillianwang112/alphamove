@@ -10,11 +10,19 @@ declare global {
         chat: (
           messages: string | Array<{ role: string; content: string }>,
           options?: { model?: string }
-        ) => Promise<{
-          message: {
-            content: string | Array<{ text: string }>;
-          };
-        }>;
+        ) => Promise<
+          | string
+          | {
+              text?: string;
+              message?: {
+                content: string | Array<{ text: string }>;
+              };
+            }
+        >;
+      };
+      auth: {
+        isSignedIn: () => boolean;
+        signIn: () => Promise<void>;
       };
     };
   }
@@ -40,17 +48,26 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   try {
     await waitForPuter();
 
-    const response = await window.puter.ai.chat(messages, { model: 'claude-3-7-sonnet' });
-    const content = response?.message?.content;
-    if (!content) throw new Error('Empty AI response');
+    // Ensure user is signed into puter (required for AI access)
+    if (!window.puter.auth.isSignedIn()) {
+      await window.puter.auth.signIn();
+    }
 
-    if (typeof content === 'string') {
-      return content;
+    const response = await window.puter.ai.chat(messages, { model: 'claude-3-7-sonnet' });
+
+    // Handle multiple possible response formats from puter.js
+    if (typeof response === 'string') return response;
+    if (response && typeof response === 'object') {
+      if ('text' in response && response.text) return response.text as string;
+      const content = response?.message?.content;
+      if (content) {
+        if (typeof content === 'string') return content;
+        if (Array.isArray(content)) {
+          return content.map((c) => (typeof c === 'object' && 'text' in c ? c.text : String(c))).join('');
+        }
+      }
     }
-    if (Array.isArray(content)) {
-      return content.map((c) => (typeof c === 'object' && 'text' in c ? c.text : String(c))).join('');
-    }
-    return String(content);
+    throw new Error('Empty AI response');
   } catch (err) {
     console.error('callAI error:', err);
     throw err;

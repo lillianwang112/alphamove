@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import type { MentorMessage } from '../../types';
 import ChatBubble from './ChatBubble';
 
@@ -9,6 +9,7 @@ interface MentorChatProps {
   disabled?: boolean;
   readyToExecute?: boolean;
   onExecute?: () => void;
+  topContent?: ReactNode;
 }
 
 export default function MentorChat({
@@ -18,6 +19,7 @@ export default function MentorChat({
   disabled = false,
   readyToExecute = false,
   onExecute,
+  topContent,
 }: MentorChatProps) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -69,7 +71,6 @@ export default function MentorChat({
         borderRadius: 'var(--radius-xl)',
         overflow: 'hidden',
         height: '100%',
-        minHeight: '400px',
       }}
     >
       {/* Chat header */}
@@ -150,7 +151,9 @@ export default function MentorChat({
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        {messages.length === 0 && !loading && (
+        {topContent}
+
+        {messages.length === 0 && !loading && !topContent && (
           <div
             style={{
               display: 'flex',

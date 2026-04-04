@@ -167,108 +167,50 @@ export default function MentorPage() {
         </button>
       </div>
 
-      {/* Suggestion chips — shown when chat is fresh */}
-      {messages.length <= 1 && !loading && (
-        <TourAnchor id="mentor-prompts">
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              flexShrink: 0,
-              animation: 'fadeIn 0.4s ease both',
-              animationDelay: '0.2s',
-            }}
-          >
-          {(beginnerMode || suggestedPrompt) && (
-            <div
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '16px',
-                padding: '14px 16px',
-              }}
-            >
-              <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: '10px' }}>
-                Ask Alpha when you feel stuck, want a concept translated into plain English, or need help turning an idea into a trade thesis.
-              </p>
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {suggestedPrompt && (
-                  <button
-                    onClick={() => handleSend(suggestedPrompt)}
-                    className="btn btn-secondary"
-                    style={{ padding: '10px 12px', fontSize: '0.82rem' }}
-                  >
-                    Use suggested prompt
-                  </button>
-                )}
-                {beginnerMode && (
-                  <button
-                    onClick={() => setLearnOpen(true)}
-                    className="btn btn-ghost"
-                    style={{ padding: '10px 12px', fontSize: '0.82rem' }}
-                  >
-                    Learn first
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '8px',
-            }}
-          >
-          {[
-            "What is a P/E ratio?",
-            "How do I diversify?",
-            "Should I buy the dip?",
-            "What's dollar-cost averaging?",
-            "How do I know if a stock is overvalued?",
-          ].map((suggestion) => (
-            <button
-              key={suggestion}
-              onClick={() => handleSend(suggestion)}
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '999px',
-                padding: '8px 14px',
-                color: 'var(--text-secondary)',
-                fontSize: '0.8rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget;
-                el.style.borderColor = 'var(--accent)';
-                el.style.color = 'var(--accent)';
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget;
-                el.style.borderColor = 'var(--border)';
-                el.style.color = 'var(--text-secondary)';
-              }}
-            >
-              {suggestion}
-            </button>
-          ))}
-          </div>
-          </div>
-        </TourAnchor>
-      )}
-
-      {/* Chat */}
-      <div style={{ flex: 1, overflow: 'hidden', animation: 'slideInUp 0.4s ease both', animationDelay: '0.1s' }}>
+      {/* Chat — fills remaining space; suggestion chips live inside the messages area */}
+      <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, animation: 'slideInUp 0.4s ease both', animationDelay: '0.1s' }}>
         <MentorChat
           messages={messages}
           onSend={handleSend}
           loading={loading}
+          topContent={messages.length <= 1 && !loading ? (
+            <TourAnchor id="mentor-prompts">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '4px 0 8px' }}>
+                {(beginnerMode || suggestedPrompt) && (
+                  <div style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', borderRadius: '12px', padding: '12px 14px' }}>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: '10px' }}>
+                      Ask Alpha when you feel stuck, want a concept in plain English, or need help building a trade thesis.
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {suggestedPrompt && (
+                        <button onClick={() => handleSend(suggestedPrompt)} className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: '0.8rem' }}>
+                          Use suggested prompt
+                        </button>
+                      )}
+                      {beginnerMode && (
+                        <button onClick={() => setLearnOpen(true)} className="btn btn-ghost" style={{ padding: '8px 12px', fontSize: '0.8rem' }}>
+                          Learn first
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {["What is a P/E ratio?", "How do I diversify?", "Should I buy the dip?", "What's dollar-cost averaging?", "How do I know if a stock is overvalued?"].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => handleSend(suggestion)}
+                      style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', borderRadius: '999px', padding: '7px 13px', color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s ease', WebkitTapHighlightColor: 'transparent' }}
+                      onMouseEnter={(e) => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.color = 'var(--accent)'; }}
+                      onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = 'var(--border)'; el.style.color = 'var(--text-secondary)'; }}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </TourAnchor>
+          ) : undefined}
         />
       </div>
 
