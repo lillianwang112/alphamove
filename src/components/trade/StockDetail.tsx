@@ -227,12 +227,12 @@ export default function StockDetail({
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
             <div>
               <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>Current Price</p>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2.2rem', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
                 ${quote.price < 1 ? quote.price.toFixed(4) : quote.price.toFixed(2)}
               </span>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '999px', background: isPositive ? 'var(--success-light)' : 'var(--danger-light)', color: isPositive ? 'var(--success)' : 'var(--danger)', fontSize: '0.875rem', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '8px 14px', borderRadius: '999px', background: isPositive ? 'var(--success-light)' : 'var(--danger-light)', color: isPositive ? 'var(--success)' : 'var(--danger)', fontSize: '0.925rem', fontWeight: 800, fontFamily: 'var(--font-mono)', border: `1px solid ${isPositive ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
                 {isPositive ? '▲' : '▼'} {Math.abs(quote.changePct * 100).toFixed(2)}%
               </span>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: isPositive ? 'var(--success)' : 'var(--danger)', marginTop: '4px' }}>
@@ -254,17 +254,20 @@ export default function StockDetail({
             timestamps={timestamps.length > 0 ? timestamps : undefined}
             isPositive={isPositive}
             loading={chartLoading}
-            height={120}
+            height={190}
             range={range}
             onRangeChange={setRange}
             firstPrice={prices[0]}
           />
         </div>
 
+        {/* Gradient divider */}
+        <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)', margin: '4px 0' }} />
+
         {/* Full stats grid — Yahoo Finance style */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-          <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
-            Key Statistics
+          <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
+            Key Metrics
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
             {allStats.map((stat, i) => (

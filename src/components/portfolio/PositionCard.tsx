@@ -45,7 +45,7 @@ export default function PositionCard({ position, onSell }: PositionCardProps) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span className="ticker">{position.ticker}</span>
+            <span className="ticker" style={{ fontSize: '1rem', letterSpacing: '-0.01em' }}>{position.ticker}</span>
           </div>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
             {position.companyName}
@@ -53,10 +53,10 @@ export default function PositionCard({ position, onSell }: PositionCardProps) {
         </div>
 
         <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '16px' }}>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1, margin: 0 }}>
+          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.04em', lineHeight: 1, margin: 0 }}>
             ${position.currentPrice < 1 ? position.currentPrice.toFixed(4) : position.currentPrice.toFixed(2)}
           </p>
-          <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px', margin: '2px 0 0' }}>per share</p>
+          <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '3px', margin: '3px 0 0', letterSpacing: '0.03em' }}>per share</p>
         </div>
       </div>
 
@@ -99,9 +99,10 @@ export default function PositionCard({ position, onSell }: PositionCardProps) {
           <span
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '1rem',
-              fontWeight: 700,
+              fontSize: '1.05rem',
+              fontWeight: 800,
               color: isPositive ? 'var(--success)' : 'var(--danger)',
+              letterSpacing: '-0.02em',
             }}
           >
             {returnDisplay}

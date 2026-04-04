@@ -614,8 +614,17 @@ export default function TradePage() {
         </div>
       </div>
 
+      {/* Loading state after ticker selection */}
+      {quoteLoading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fadeIn 0.2s ease' }}>
+          <div className="skeleton" style={{ height: '200px', borderRadius: '16px' }} />
+          <div className="skeleton" style={{ height: '80px', borderRadius: '12px' }} />
+          <div className="skeleton" style={{ height: '120px', borderRadius: '12px' }} />
+        </div>
+      )}
+
       {/* Search step */}
-      {step === 'search' && (
+      {step === 'search' && !quoteLoading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'slideInUp 0.4s ease both' }}>
           {/* Market overview — quick-tap any ticker to load it */}
           <MarketOverview onSelect={(sym, name) => handleTickerSelect(sym, name)} />

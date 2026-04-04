@@ -123,23 +123,24 @@ export default function PortfolioSummary({ portfolio, sparklineData }: Portfolio
             format={(v) => `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '2.25rem',
-              fontWeight: 600,
+              fontSize: '2.5rem',
+              fontWeight: 800,
               color: 'var(--text-primary)',
-              letterSpacing: '-0.03em',
+              letterSpacing: '-0.04em',
               lineHeight: '1',
             }}
           />
           <span
             style={{
               fontSize: '0.875rem',
-              fontWeight: 600,
+              fontWeight: 700,
               color: isPositive ? 'var(--success)' : 'var(--danger)',
               background: isPositive ? 'var(--success-light)' : 'var(--danger-light)',
-              padding: '3px 10px',
+              padding: '5px 12px',
               borderRadius: '999px',
               marginBottom: '4px',
               fontFamily: 'var(--font-mono)',
+              border: `1px solid ${isPositive ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
             }}
           >
             {isPositive ? '+' : '-'}{formatCurrency(portfolio.allTimeReturn)} ({formatPct(portfolio.allTimeReturnPct)})
