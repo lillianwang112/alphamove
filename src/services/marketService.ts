@@ -37,7 +37,28 @@ export interface CompanyProfileResult {
 
 // ─── Helpers ──────────────────────────────────────
 
+// Simple token-bucket rate limiter: max 40 calls/min for safety margin
+// (Finnhub free tier = 60/min, but many components load simultaneously)
+const _rateBucket = { tokens: 40, lastRefill: Date.now() };
+function _consumeToken(): Promise<void> {
+  const now = Date.now();
+  const elapsed = now - _rateBucket.lastRefill;
+  // Refill tokens proportionally (40 tokens per 60s)
+  if (elapsed > 0) {
+    _rateBucket.tokens = Math.min(40, _rateBucket.tokens + (elapsed / 60000) * 40);
+    _rateBucket.lastRefill = now;
+  }
+  if (_rateBucket.tokens >= 1) {
+    _rateBucket.tokens -= 1;
+    return Promise.resolve();
+  }
+  // Wait until we have a token
+  const waitMs = Math.ceil((1 - _rateBucket.tokens) * (60000 / 40));
+  return new Promise((resolve) => setTimeout(resolve, waitMs));
+}
+
 async function finnhubFetch<T>(path: string): Promise<T> {
+  await _consumeToken();
   const separator = path.includes('?') ? '&' : '?';
   const url = `${FINNHUB_BASE_URL}${path}${separator}token=${FINNHUB_API_KEY}`;
   const res = await fetch(url);
@@ -314,9 +335,12 @@ export interface MarketMover {
 
 const _moversCache = new Map<string, { result: MarketMover[]; exp: number }>();
 
+// FMP v3 base for market endpoints (gainers/losers/actives live under /api/v3)
+const FMP_V3_BASE = 'https://financialmodelingprep.com/api/v3';
+
 async function fmpFetch<T>(path: string): Promise<T> {
   const sep = path.includes('?') ? '&' : '?';
-  const url = `${FMP_BASE_URL}${path}${sep}apikey=${FMP_API_KEY}`;
+  const url = `${FMP_V3_BASE}${path}${sep}apikey=${FMP_API_KEY}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`FMP ${path} failed: ${res.status}`);
   return res.json() as Promise<T>;
@@ -329,13 +353,15 @@ export async function getMarketMovers(type: 'gainers' | 'losers' | 'actives'): P
 
   if (!FMP_API_KEY) return [];
   try {
+    // FMP v3 endpoint: /stock_market/gainers|losers|actives
+    const endpoint = type === 'actives' ? '/stock_market/actives' : `/stock_market/${type}`;
     const data = await fmpFetch<Array<{
       symbol: string;
       name: string;
       price: number;
       change: number;
       changesPercentage: number;
-    }>>(`/stock-${type}`);
+    }>>(endpoint);
 
     if (!Array.isArray(data)) return [];
     const result = data.slice(0, 10).map((d) => ({
