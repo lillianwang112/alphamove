@@ -37,28 +37,34 @@ export interface CompanyProfileResult {
 
 // ─── Helpers ──────────────────────────────────────
 
-// Simple token-bucket rate limiter: max 40 calls/min for safety margin
-// (Finnhub free tier = 60/min, but many components load simultaneously)
-const _rateBucket = { tokens: 40, lastRefill: Date.now() };
-function _consumeToken(): Promise<void> {
-  const now = Date.now();
-  const elapsed = now - _rateBucket.lastRefill;
-  // Refill tokens proportionally (40 tokens per 60s)
-  if (elapsed > 0) {
-    _rateBucket.tokens = Math.min(40, _rateBucket.tokens + (elapsed / 60000) * 40);
-    _rateBucket.lastRefill = now;
+// Sequential queue-based rate limiter: max 5 Finnhub calls/second.
+// A token bucket doesn't work because all async calls check simultaneously
+// before any have been consumed. This queue serialises them properly.
+const _finnhubQueue: Array<(v: void) => void> = [];
+let _queueDraining = false;
+
+function _enqueue(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    _finnhubQueue.push(resolve);
+    if (!_queueDraining) _drainQueue();
+  });
+}
+
+async function _drainQueue(): Promise<void> {
+  _queueDraining = true;
+  while (_finnhubQueue.length > 0) {
+    const resolve = _finnhubQueue.shift()!;
+    resolve();
+    if (_finnhubQueue.length > 0) {
+      // 220ms between calls ≈ 4.5 calls/sec, safely under 60/min free tier
+      await new Promise(r => setTimeout(r, 220));
+    }
   }
-  if (_rateBucket.tokens >= 1) {
-    _rateBucket.tokens -= 1;
-    return Promise.resolve();
-  }
-  // Wait until we have a token
-  const waitMs = Math.ceil((1 - _rateBucket.tokens) * (60000 / 40));
-  return new Promise((resolve) => setTimeout(resolve, waitMs));
+  _queueDraining = false;
 }
 
 async function finnhubFetch<T>(path: string): Promise<T> {
-  await _consumeToken();
+  await _enqueue();
   const separator = path.includes('?') ? '&' : '?';
   const url = `${FINNHUB_BASE_URL}${path}${separator}token=${FINNHUB_API_KEY}`;
   const res = await fetch(url);
@@ -346,6 +352,30 @@ async function fmpFetch<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Curated list of ~30 major US stocks for free-tier movers
+const MOVER_TICKERS = [
+  'AAPL','MSFT','GOOGL','AMZN','NVDA','TSLA','META','JPM','JNJ','V',
+  'WMT','XOM','UNH','MA','HD','PG','BAC','LLY','AVGO','MRK',
+  'PEP','COST','ABBV','KO','CVX','MCD','TMO','CSCO','WFC','NFLX',
+];
+
+interface BatchQuoteEntry { symbol: string; name: string; price: number; change: number; changesPercentage: number; volume: number }
+let _batchQuoteCacheRef: { data: BatchQuoteEntry[]; exp: number } | null = null;
+
+async function _fetchBatchQuotes(): Promise<BatchQuoteEntry[]> {
+  if (_batchQuoteCacheRef && Date.now() < _batchQuoteCacheRef.exp) return _batchQuoteCacheRef.data;
+  if (!FMP_API_KEY) return [];
+  try {
+    const symbols = MOVER_TICKERS.join(',');
+    const data = await fmpFetch<BatchQuoteEntry[]>(`/quote/${encodeURIComponent(symbols)}`);
+    if (!Array.isArray(data)) return [];
+    _batchQuoteCacheRef = { data, exp: Date.now() + 5 * 60 * 1000 };
+    return data;
+  } catch {
+    return [];
+  }
+}
+
 export async function getMarketMovers(type: 'gainers' | 'losers' | 'actives'): Promise<MarketMover[]> {
   const cacheKey = type;
   const hit = _moversCache.get(cacheKey);
@@ -353,18 +383,19 @@ export async function getMarketMovers(type: 'gainers' | 'losers' | 'actives'): P
 
   if (!FMP_API_KEY) return [];
   try {
-    // FMP v3 endpoint: /stock_market/gainers|losers|actives
-    const endpoint = type === 'actives' ? '/stock_market/actives' : `/stock_market/${type}`;
-    const data = await fmpFetch<Array<{
-      symbol: string;
-      name: string;
-      price: number;
-      change: number;
-      changesPercentage: number;
-    }>>(endpoint);
+    const quotes = await _fetchBatchQuotes();
+    if (quotes.length === 0) return [];
 
-    if (!Array.isArray(data)) return [];
-    const result = data.slice(0, 10).map((d) => ({
+    let sorted: typeof quotes;
+    if (type === 'gainers') {
+      sorted = [...quotes].sort((a, b) => (b.changesPercentage ?? 0) - (a.changesPercentage ?? 0));
+    } else if (type === 'losers') {
+      sorted = [...quotes].sort((a, b) => (a.changesPercentage ?? 0) - (b.changesPercentage ?? 0));
+    } else {
+      sorted = [...quotes].sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
+    }
+
+    const result = sorted.slice(0, 10).map((d) => ({
       symbol: d.symbol,
       name: d.name || d.symbol,
       price: d.price ?? 0,
