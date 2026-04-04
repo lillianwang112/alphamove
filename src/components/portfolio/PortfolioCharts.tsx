@@ -133,8 +133,8 @@ export default function PortfolioCharts({ portfolio, positions }: PortfolioChart
       {/* Overall P&L hero */}
       <div style={{
         background: isPositive
-          ? 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(20,21,34,0.98) 70%)'
-          : 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(20,21,34,0.98) 70%)',
+          ? 'linear-gradient(135deg, rgba(34,197,94,0.1) 0%, var(--surface) 70%)'
+          : 'linear-gradient(135deg, rgba(239,68,68,0.1) 0%, var(--surface) 70%)',
         border: `1px solid ${isPositive ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
         borderRadius: 'var(--radius-xl)',
         padding: '16px 20px',
