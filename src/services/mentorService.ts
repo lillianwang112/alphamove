@@ -20,10 +20,6 @@ declare global {
             }
         >;
       };
-      auth?: {
-        isSignedIn?: () => boolean;
-        signIn?: () => Promise<void>;
-      };
     };
   }
 }
@@ -48,17 +44,10 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   try {
     await waitForPuter();
 
-    // Ensure puter auth. puter.js v2 may not expose isSignedIn(); if it doesn't exist we treat
-    // the user as not signed in and call signIn() which is a no-op when already authenticated.
-    const { auth } = window.puter;
-    if (auth) {
-      const alreadySignedIn = typeof auth.isSignedIn === 'function' ? auth.isSignedIn() : false;
-      if (!alreadySignedIn) {
-        await auth.signIn?.();
-      }
-    }
-
-    const response = await window.puter.ai.chat(messages, { model: 'claude-3-7-sonnet' });
+    // Let puter.js handle auth automatically — calling signIn() manually causes a popup
+    // that can't attach to the SPA DOM, producing "Node cannot be found" errors.
+    // puter.ai.chat() will prompt the user to sign in itself if not authenticated.
+    const response = await window.puter.ai.chat(messages, { model: 'claude-3-5-sonnet' });
 
     // Handle multiple possible response formats from puter.js
     if (typeof response === 'string') return response;
@@ -74,7 +63,8 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     }
     throw new Error('Empty AI response');
   } catch (err) {
-    console.error('callAI error:', err);
+    // Serialize the error so we can actually read it in the console
+    console.error('callAI error:', JSON.stringify(err, Object.getOwnPropertyNames(err as object)));
     throw err;
   }
 }
