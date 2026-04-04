@@ -49,7 +49,16 @@ export default function MentorPage() {
   }, [initConversation, user]);
 
   const handleSend = async (text: string) => {
-    if (!conversation || !user) return;
+    if (!user) return;
+    // Auto-init conversation if it doesn't exist yet (handles auth load race)
+    let activeConversation = conversation;
+    if (!activeConversation) {
+      const conv = startGeneralChat(user.uid);
+      _cachedConversation = conv;
+      _cachedMessages = [];
+      setConversation(conv);
+      activeConversation = conv;
+    }
     setLoading(true);
 
     const optimisticUserMsg: MentorMessage = {
@@ -67,7 +76,7 @@ export default function MentorPage() {
 
     try {
       const response = await sendMessage({
-        conversationId: conversation.id,
+        conversationId: activeConversation.id,
         message: text,
         userLevel: user.level ?? 1,
         cash: user.currentCash ?? 0,

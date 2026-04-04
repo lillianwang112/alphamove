@@ -40,7 +40,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   try {
     await waitForPuter();
 
-    const response = await window.puter.ai.chat(messages, { model: 'claude-opus-4-6' });
+    const response = await window.puter.ai.chat(messages, { model: 'claude-3-7-sonnet' });
     const content = response?.message?.content;
     if (!content) throw new Error('Empty AI response');
 
