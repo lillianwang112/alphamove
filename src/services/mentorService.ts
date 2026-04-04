@@ -47,7 +47,7 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
     // Let puter.js handle auth automatically — calling signIn() manually causes a popup
     // that can't attach to the SPA DOM, producing "Node cannot be found" errors.
     // puter.ai.chat() will prompt the user to sign in itself if not authenticated.
-    const response = await window.puter.ai.chat(messages, { model: 'claude-3-5-sonnet' });
+    const response = await window.puter.ai.chat(messages, { model: 'gemini-2.5-flash' });
 
     // Handle multiple possible response formats from puter.js
     if (typeof response === 'string') return response;
