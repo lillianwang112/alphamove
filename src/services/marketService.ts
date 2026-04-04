@@ -179,6 +179,8 @@ export interface CandleResult {
   timestamps: number[];
   highs: number[];
   lows: number[];
+  opens: number[];
+  volumes: number[];
 }
 
 export async function getStockCandles(ticker: string, days = 30): Promise<CandleResult> {
@@ -207,6 +209,8 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
             timestamps: rows.map((r) => Math.floor(new Date(r.date).getTime() / 1000)),
             highs: rows.map((r) => r.high),
             lows: rows.map((r) => r.low),
+            opens: rows.map((r) => r.open),
+            volumes: rows.map((r) => (r as { volume?: number }).volume ?? 0),
           };
           _candleCache.set(cacheKey, { result, exp: Date.now() + CACHE_TTL });
           return result;
@@ -225,6 +229,8 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
       c?: number[];
       h?: number[];
       l?: number[];
+      o?: number[];
+      v?: number[];
       t?: number[];
       s: string;
     }>(`/stock/candle?symbol=${encodeURIComponent(ticker)}&resolution=D&from=${fromUnix}&to=${toUnix}`);
@@ -235,6 +241,8 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
         timestamps: data.t ?? [],
         highs: data.h ?? [],
         lows: data.l ?? [],
+        opens: data.o ?? [],
+        volumes: data.v ?? [],
       };
       _candleCache.set(cacheKey, { result, exp: Date.now() + CACHE_TTL });
       return result;
@@ -243,7 +251,7 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
     // fall through
   }
 
-  return { closes: [], timestamps: [], highs: [], lows: [] };
+  return { closes: [], timestamps: [], highs: [], lows: [], opens: [], volumes: [] };
 }
 
 // ─── Stock Metrics ────────────────────────────────
@@ -291,6 +299,56 @@ export async function getStockMetrics(ticker: string): Promise<StockMetrics> {
     return result;
   } catch {
     return { peRatio: null, beta: null, high52w: null, low52w: null, avgVolume10d: null, eps: null, dividendYield: null, returnYTD: null };
+  }
+}
+
+// ─── Market Movers ────────────────────────────────
+
+export interface MarketMover {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changesPercentage: number;
+}
+
+const _moversCache = new Map<string, { result: MarketMover[]; exp: number }>();
+
+async function fmpFetch<T>(path: string): Promise<T> {
+  const sep = path.includes('?') ? '&' : '?';
+  const url = `${FMP_BASE_URL}${path}${sep}apikey=${FMP_API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`FMP ${path} failed: ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+export async function getMarketMovers(type: 'gainers' | 'losers' | 'actives'): Promise<MarketMover[]> {
+  const cacheKey = type;
+  const hit = _moversCache.get(cacheKey);
+  if (hit && Date.now() < hit.exp) return hit.result;
+
+  if (!FMP_API_KEY) return [];
+  try {
+    const data = await fmpFetch<Array<{
+      symbol: string;
+      name: string;
+      price: number;
+      change: number;
+      changesPercentage: number;
+    }>>(`/stock-${type}`);
+
+    if (!Array.isArray(data)) return [];
+    const result = data.slice(0, 10).map((d) => ({
+      symbol: d.symbol,
+      name: d.name || d.symbol,
+      price: d.price ?? 0,
+      change: d.change ?? 0,
+      changesPercentage: d.changesPercentage ?? 0,
+    }));
+    _moversCache.set(cacheKey, { result, exp: Date.now() + 5 * 60 * 1000 });
+    return result;
+  } catch {
+    return [];
   }
 }
 

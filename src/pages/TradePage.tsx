@@ -18,6 +18,9 @@ import TourAnchor from '../components/guidance/TourAnchor';
 import LearnSheet from '../components/guidance/LearnSheet';
 import AssetClassSelector from '../components/trade/AssetClassSelector';
 import MarketOverview from '../components/trade/MarketOverview';
+import MarketMovers from '../components/trade/MarketMovers';
+import SectorHeatmap from '../components/trade/SectorHeatmap';
+import WatchlistPanel from '../components/trade/WatchlistPanel';
 import OptionsChain from '../components/trade/OptionsChain';
 import { getCryptoQuote, getCryptoName } from '../services/cryptoService';
 import type { TradeAction, MentorMessage, MentorConversation, MoveRating, AssetClass, OptionContract } from '../types';
@@ -651,6 +654,15 @@ export default function TradePage() {
           {/* Market overview — quick-tap any ticker to load it */}
           <MarketOverview onSelect={(sym, name) => handleTickerSelect(sym, name)} />
 
+          {/* Watchlist */}
+          <WatchlistPanel onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+
+          {/* Market movers */}
+          <MarketMovers onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+
+          {/* Sector heatmap */}
+          <SectorHeatmap onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+
           {/* Asset class selector */}
           <AssetClassSelector
             value={assetClass}
@@ -925,6 +937,7 @@ export default function TradePage() {
           assetClass={assetClass}
           onBuy={handleBuy}
           onSell={handleSell}
+          uid={user?.uid}
         />
       )}
 

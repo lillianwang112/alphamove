@@ -38,6 +38,7 @@ interface StockDetailProps {
   assetClass?: AssetClass;
   onBuy: () => void;
   onSell: () => void;
+  uid?: string;
 }
 
 function formatMarketCap(value: number): string {
@@ -104,11 +105,15 @@ const RANGE_DAYS: Record<TimeRange, number> = {
 };
 
 export default function StockDetail({
-  ticker, companyName, quote, profile, assetClass = 'stock', onBuy, onSell,
+  ticker, companyName, quote, profile, assetClass = 'stock', onBuy, onSell, uid,
 }: StockDetailProps) {
   const navigate = useNavigate();
   const [prices, setPrices] = useState<number[]>([]);
   const [timestamps, setTimestamps] = useState<number[]>([]);
+  const [chartHighs, setChartHighs] = useState<number[]>([]);
+  const [chartLows, setChartLows] = useState<number[]>([]);
+  const [chartOpens, setChartOpens] = useState<number[]>([]);
+  const [chartVolumes, setChartVolumes] = useState<number[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
   const [chartSimulated, setChartSimulated] = useState(false);
   const [range, setRange] = useState<TimeRange>('1M');
@@ -116,6 +121,8 @@ export default function StockDetail({
   const [newsLoading, setNewsLoading] = useState(true);
   const [descExpanded, setDescExpanded] = useState(false);
   const [metrics, setMetrics] = useState<StockMetrics | null>(null);
+  const [aiOutlook, setAiOutlook] = useState<string | null>(null);
+  const [outlookLoading, setOutlookLoading] = useState(false);
 
   const isPositive = quote.change >= 0;
 
@@ -124,6 +131,10 @@ export default function StockDetail({
     setChartLoading(true);
     setPrices([]);
     setTimestamps([]);
+    setChartHighs([]);
+    setChartLows([]);
+    setChartOpens([]);
+    setChartVolumes([]);
     const days = RANGE_DAYS[range];
     const fetch_ = assetClass === 'crypto'
       ? getCryptoCandles(ticker, days)
@@ -133,15 +144,27 @@ export default function StockDetail({
       if (data.closes.length >= 5) {
         setPrices(data.closes);
         setTimestamps(data.timestamps ?? []);
+        setChartHighs(data.highs ?? []);
+        setChartLows(data.lows ?? []);
+        setChartOpens(data.opens ?? []);
+        setChartVolumes(data.volumes ?? []);
         setChartSimulated(false);
       } else {
         setPrices(generateSyntheticPrices(quote, days, ticker));
         setTimestamps([]);
+        setChartHighs([]);
+        setChartLows([]);
+        setChartOpens([]);
+        setChartVolumes([]);
         setChartSimulated(true);
       }
     }).catch(() => {
       setPrices(generateSyntheticPrices(quote, days, ticker));
       setTimestamps([]);
+      setChartHighs([]);
+      setChartLows([]);
+      setChartOpens([]);
+      setChartVolumes([]);
       setChartSimulated(true);
     }).finally(() => setChartLoading(false));
   }, [ticker, range, assetClass]);
@@ -252,6 +275,10 @@ export default function StockDetail({
           <PriceChart
             prices={prices}
             timestamps={timestamps.length > 0 ? timestamps : undefined}
+            highs={chartHighs}
+            lows={chartLows}
+            opens={chartOpens}
+            volumes={chartVolumes}
             isPositive={isPositive}
             loading={chartLoading}
             height={190}
@@ -320,6 +347,13 @@ export default function StockDetail({
           </button>
         </div>
 
+        {/* Add to Watchlist */}
+        {assetClass === 'stock' && uid && (
+          <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)' }}>
+            <AddToWatchlistButton ticker={ticker} uid={uid} />
+          </div>
+        )}
+
         {/* Action buttons */}
         <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <button onClick={onBuy} className="btn btn-success" style={{ fontSize: '1rem', height: '50px' }}>
@@ -374,6 +408,159 @@ export default function StockDetail({
           )}
         </div>
       )}
+
+      {/* ── Historical Data Table ── */}
+      {prices.length > 0 && !chartSimulated && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', overflow: 'hidden', marginTop: '12px' }}>
+          <div className="section-label" style={{ marginBottom: '12px', fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Historical Data</div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  {['Date', 'Open', 'High', 'Low', 'Close', 'Vol'].map(h => (
+                    <th key={h} style={{ padding: '6px 8px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...Array(Math.min(prices.length, 20))].map((_, rawIdx) => {
+                  const i = prices.length - 1 - rawIdx;
+                  const close = prices[i];
+                  const open = chartOpens[i] ?? close;
+                  const high = chartHighs[i] ?? close;
+                  const low = chartLows[i] ?? close;
+                  const vol = chartVolumes[i] ?? 0;
+                  const ts = timestamps[i];
+                  const isUp = close >= open;
+                  const date = ts ? new Date(ts * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : `Day ${i + 1}`;
+                  return (
+                    <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ padding: '7px 8px', color: 'var(--text-muted)', textAlign: 'right', whiteSpace: 'nowrap' }}>{date}</td>
+                      <td style={{ padding: '7px 8px', color: 'var(--text-secondary)', textAlign: 'right' }}>${open.toFixed(2)}</td>
+                      <td style={{ padding: '7px 8px', color: '#22C55E', textAlign: 'right' }}>${high.toFixed(2)}</td>
+                      <td style={{ padding: '7px 8px', color: '#EF4444', textAlign: 'right' }}>${low.toFixed(2)}</td>
+                      <td style={{ padding: '7px 8px', color: isUp ? '#22C55E' : '#EF4444', textAlign: 'right', fontWeight: 700 }}>${close.toFixed(2)}</td>
+                      <td style={{ padding: '7px 8px', color: 'var(--text-muted)', textAlign: 'right' }}>{vol >= 1e6 ? `${(vol / 1e6).toFixed(1)}M` : vol >= 1e3 ? `${(vol / 1e3).toFixed(0)}K` : String(vol)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── AI Outlook ── */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '16px', marginTop: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: aiOutlook ? '12px' : '0' }}>
+          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>AI Price Outlook</div>
+          {!aiOutlook && (
+            <button
+              onClick={async () => {
+                const w = window as unknown as { puter?: { ai?: { chat?: unknown } } };
+                if (!w.puter?.ai?.chat) {
+                  setAiOutlook('AI features require the Puter.js environment.');
+                  return;
+                }
+                setOutlookLoading(true);
+                try {
+                  const puter = window.puter as { ai: { chat: (msg: string, opts: { model: string }) => Promise<unknown> } };
+                  const recentChange = quote ? `${quote.changePct > 0 ? '+' : ''}${(quote.changePct * 100).toFixed(2)}% today` : '';
+                  const prompt = `You are Alpha, a brief investing mentor. Give a 2-3 sentence educational outlook for ${ticker} (${companyName || ticker}). Current price: $${quote?.price.toFixed(2) || 'N/A'}. Today: ${recentChange}. Focus on one key factor a beginner investor should know. No financial advice disclaimer. Be direct and educational.`;
+                  const response = await puter.ai.chat(prompt, { model: 'gemini-2.5-flash' });
+                  let text = '';
+                  if (typeof response === 'string') text = response;
+                  else if (response && typeof response === 'object') {
+                    const r = response as Record<string, unknown>;
+                    if (r.text) text = r.text as string;
+                    else if (r.message) {
+                      const c = (r.message as Record<string, unknown>).content;
+                      if (typeof c === 'string') text = c;
+                      else if (Array.isArray(c)) text = c.map((x: Record<string, unknown>) => x.text as string).join('');
+                    }
+                  }
+                  setAiOutlook(text.trim());
+                } catch {
+                  setAiOutlook('Unable to generate outlook right now.');
+                } finally {
+                  setOutlookLoading(false);
+                }
+              }}
+              disabled={outlookLoading}
+              style={{
+                background: 'var(--gradient-primary)', border: 'none', borderRadius: '8px',
+                padding: '7px 14px', color: 'white', fontSize: '0.78rem', fontWeight: 700,
+                cursor: outlookLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+              }}
+            >
+              {outlookLoading ? (
+                <><span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'white', animation: 'pulse 1s infinite' }} /> Analyzing...</>
+              ) : (
+                <>♟ Generate Outlook</>
+              )}
+            </button>
+          )}
+        </div>
+        {aiOutlook && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <span style={{ fontSize: '16px', flexShrink: 0, marginTop: '1px' }}>♟</span>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>{aiOutlook}</p>
+            </div>
+            <button onClick={() => setAiOutlook(null)} style={{ marginTop: '8px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.72rem', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
+              Regenerate
+            </button>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+function AddToWatchlistButton({ ticker, uid }: { ticker: string; uid: string }) {
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    import('../../services/watchlistService').then(({ getWatchlist }) => {
+      getWatchlist(uid).then(tickers => {
+        setInWatchlist(tickers.includes(ticker));
+        setChecking(false);
+      }).catch(() => setChecking(false));
+    });
+  }, [ticker, uid]);
+
+  const toggle = async () => {
+    const { addToWatchlist, removeFromWatchlist } = await import('../../services/watchlistService');
+    if (inWatchlist) {
+      await removeFromWatchlist(uid, ticker);
+      setInWatchlist(false);
+    } else {
+      await addToWatchlist(uid, ticker);
+      setInWatchlist(true);
+    }
+  };
+
+  if (checking) return null;
+
+  return (
+    <button
+      onClick={toggle}
+      style={{
+        width: '100%', padding: '11px', borderRadius: '10px',
+        background: inWatchlist ? 'var(--surface-elevated)' : 'transparent',
+        border: `1px solid ${inWatchlist ? 'var(--border-strong)' : 'var(--border)'}`,
+        color: inWatchlist ? 'var(--text-secondary)' : 'var(--accent)',
+        fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+        transition: 'all 0.15s',
+      }}
+    >
+      {inWatchlist ? (
+        <><span>★</span> In Watchlist</>
+      ) : (
+        <><span>☆</span> Add to Watchlist</>
+      )}
+    </button>
   );
 }

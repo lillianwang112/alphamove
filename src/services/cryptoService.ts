@@ -72,25 +72,34 @@ export async function getCryptoQuote(ticker: string): Promise<CryptoQuoteResult>
 export interface CryptoCandleResult {
   closes: number[];
   timestamps: number[];
+  highs: number[];
+  lows: number[];
+  opens: number[];
+  volumes: number[];
 }
 
 export async function getCryptoCandles(ticker: string, days = 30): Promise<CryptoCandleResult> {
+  const empty = { closes: [], timestamps: [], highs: [], lows: [], opens: [], volumes: [] };
   const entry = COIN_MAP[ticker.toUpperCase()];
-  if (!entry) return { closes: [], timestamps: [] };
+  if (!entry) return empty;
 
   try {
     const url = `https://api.coingecko.com/api/v3/coins/${entry.id}/market_chart?vs_currency=usd&days=${days}&interval=daily`;
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!res.ok) return { closes: [], timestamps: [] };
+    if (!res.ok) return empty;
 
     const data = await res.json() as { prices: [number, number][] };
-    if (!data.prices?.length) return { closes: [], timestamps: [] };
+    if (!data.prices?.length) return empty;
 
     return {
       closes: data.prices.map(([, price]) => price),
       timestamps: data.prices.map(([ts]) => Math.floor(ts / 1000)),
+      highs: [],
+      lows: [],
+      opens: [],
+      volumes: [],
     };
   } catch {
-    return { closes: [], timestamps: [] };
+    return empty;
   }
 }

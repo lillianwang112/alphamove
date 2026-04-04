@@ -1,0 +1,1 @@
+import{n as e}from"./firebase-CCQ4aWJU.js";export{e as db};
