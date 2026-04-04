@@ -13,6 +13,23 @@
         var t = localStorage.getItem('alphamove-theme');
         if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
       })();
+      // Auto-update: fetch version.json (no cache) and reload once when a new
+      // build is deployed, so users never see a stale cached version.
+      (function() {
+        fetch('/alphamove/version.json?' + Date.now(), { cache: 'no-store' })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            var key = 'am-ver';
+            var stored = localStorage.getItem(key);
+            if (stored && stored !== data.v) {
+              localStorage.setItem(key, data.v);
+              location.reload(true);
+            } else {
+              localStorage.setItem(key, data.v);
+            }
+          })
+          .catch(function() {});
+      })();
     </script>
     <script type="module" crossorigin src="/alphamove/assets/index-T1f1rgIr.js"></script>
     <link rel="modulepreload" crossorigin href="/alphamove/assets/index.esm-CUM8Rjxu.js">

@@ -1,22 +1,20 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { writeFileSync } from 'fs';
 
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // Immediately take control when a new version is detected
       workbox: {
         clientsClaim: true,
         skipWaiting: true,
-        // Always fetch the HTML from the network so users get the latest version
         navigateFallback: '/alphamove/index.html',
         navigateFallbackAllowlist: [/^\/alphamove/],
         runtimeCaching: [
           {
-            // Cache API calls with network-first (fresh data, fallback to cache)
             urlPattern: /^https:\/\/(finnhub\.io|financialmodelingprep\.com)/,
             handler: 'NetworkFirst',
             options: { cacheName: 'api-cache', expiration: { maxAgeSeconds: 300 } },
@@ -38,6 +36,14 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
+    // Write a version.json with the build timestamp so the inline version-check
+    // script in index.html can detect new deployments and force a reload.
+    {
+      name: 'version-json',
+      closeBundle() {
+        writeFileSync('docs/version.json', JSON.stringify({ v: Date.now().toString() }));
+      },
+    },
   ],
   base: mode === 'production' ? '/alphamove/' : '/',
   build: {
