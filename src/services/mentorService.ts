@@ -20,9 +20,9 @@ declare global {
             }
         >;
       };
-      auth: {
-        isSignedIn: () => boolean;
-        signIn: () => Promise<void>;
+      auth?: {
+        isSignedIn?: () => boolean;
+        signIn?: () => Promise<void>;
       };
     };
   }
@@ -48,9 +48,14 @@ async function callAI(messages: Array<{ role: string; content: string }>): Promi
   try {
     await waitForPuter();
 
-    // Ensure user is signed into puter (required for AI access)
-    if (!window.puter.auth.isSignedIn()) {
-      await window.puter.auth.signIn();
+    // Ensure puter auth. puter.js v2 may not expose isSignedIn(); if it doesn't exist we treat
+    // the user as not signed in and call signIn() which is a no-op when already authenticated.
+    const { auth } = window.puter;
+    if (auth) {
+      const alreadySignedIn = typeof auth.isSignedIn === 'function' ? auth.isSignedIn() : false;
+      if (!alreadySignedIn) {
+        await auth.signIn?.();
+      }
     }
 
     const response = await window.puter.ai.chat(messages, { model: 'claude-3-7-sonnet' });
