@@ -81,11 +81,11 @@ export default function HomePage() {
     <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Greeting */}
       <div style={{ animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '2px' }}>
-          {greeting},
+        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px', letterSpacing: '0.02em' }}>
+          {greeting}
         </p>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0' }}>
-          {firstName}
+        <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em', marginBottom: '0' }}>
+          {firstName} <span style={{ WebkitTextFillColor: 'transparent', backgroundClip: 'text', background: 'var(--gradient-primary)', WebkitBackgroundClip: 'text' }}>♟</span>
         </h1>
         {beginnerMode && (
           <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '8px', maxWidth: '34ch' }}>
@@ -135,10 +135,7 @@ export default function HomePage() {
 
         return (
           <div style={{ animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both', animationDelay: '0.01s' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#EF4444', display: 'inline-block', boxShadow: '0 0 6px #EF4444' }} />
-              <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Signals</p>
-            </div>
+            <div className="section-label">Signals</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {signals.map((sig, i) => (
                 <div key={i} style={{ background: 'var(--surface)', border: `1px solid ${sig.color}25`, borderLeft: `3px solid ${sig.color}`, borderRadius: 'var(--radius-md)', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
@@ -160,8 +157,9 @@ export default function HomePage() {
       <TourAnchor id="home-start">
         <div
           style={{
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, var(--surface) 62%)',
-            border: '1px solid rgba(99, 102, 241, 0.28)',
+            background: 'linear-gradient(160deg, rgba(79,70,229,0.18) 0%, rgba(99,102,241,0.06) 50%, var(--surface) 100%)',
+            border: '1px solid rgba(99,102,241,0.32)',
+            borderTop: '2px solid rgba(99,102,241,0.6)',
             borderRadius: 'var(--radius-xl)',
             padding: '18px 16px',
             display: 'flex',
@@ -260,32 +258,21 @@ export default function HomePage() {
           {user.streak > 0 && (
             <div
               style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
+                background: 'linear-gradient(135deg, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.08) 100%)',
+                border: '1px solid rgba(249,115,22,0.25)',
                 borderRadius: 'var(--radius-lg)',
-                padding: '12px 16px',
+                padding: '14px 18px',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '2px',
-                minWidth: '80px',
+                minWidth: '84px',
               }}
             >
-              <span style={{ fontSize: '1.5rem' }}>🔥</span>
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '1.125rem',
-                  fontWeight: 700,
-                  color: '#F97316',
-                }}
-              >
-                {user.streak}
-              </span>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                day streak
-              </span>
+              <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>🔥</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.3rem', fontWeight: 800, color: '#F97316', letterSpacing: '-0.02em', lineHeight: 1 }}>{user.streak}</span>
+              <span style={{ fontSize: '0.6rem', color: 'rgba(249,115,22,0.7)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>streak</span>
             </div>
           )}
 
@@ -321,10 +308,13 @@ export default function HomePage() {
         onClick={() => navigate('/trade')}
         className="btn btn-primary btn-full"
         style={{
-          height: '54px',
+          height: '58px',
           fontSize: '1rem',
-          background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
-          boxShadow: '0 0 24px rgba(99, 102, 241, 0.35)',
+          fontWeight: 700,
+          background: 'var(--gradient-primary)',
+          boxShadow: 'var(--shadow-accent)',
+          borderRadius: 'var(--radius-lg)',
+          letterSpacing: '-0.01em',
           animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both',
           animationDelay: '0.1s',
         }}
@@ -387,9 +377,7 @@ export default function HomePage() {
 
         return (
           <div style={{ animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both', animationDelay: '0.12s' }}>
-            <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
-              Suggested Moves
-            </p>
+            <div className="section-label">Suggested Moves</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {suggestions.map((s, i) => (
                 <button
@@ -440,20 +428,9 @@ export default function HomePage() {
       {/* Portfolio summary */}
       {!portfolioLoading && portfolio && (
         <div style={{ animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both', animationDelay: '0.15s' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Portfolio</h3>
-            <button
-              onClick={() => navigate('/portfolio')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--accent)',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                padding: '4px',
-              }}
-            >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div className="section-label" style={{ marginBottom: 0 }}>Portfolio</div>
+            <button onClick={() => navigate('/portfolio')} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', padding: '4px' }}>
               View all →
             </button>
           </div>
@@ -476,9 +453,7 @@ export default function HomePage() {
       {/* Morning brief */}
       <TourAnchor id="home-brief">
         <div style={{ animation: 'slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both', animationDelay: '0.2s' }}>
-        <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '10px' }}>
-          Morning Brief
-        </h3>
+        <div className="section-label" style={{ marginBottom: '12px' }}>Morning Brief</div>
         {beginnerMode && (
           <div
             style={{

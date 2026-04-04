@@ -21,6 +21,7 @@ export default function WelcomeScreen({ onSignIn, onGuestSignIn, loading }: Welc
       setGuestLoading(false);
     }
   };
+
   return (
     <div
       style={{
@@ -28,163 +29,212 @@ export default function WelcomeScreen({ onSignIn, onGuestSignIn, loading }: Welc
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: '32px 24px',
+        justifyContent: 'space-between',
+        padding: '0',
         background: 'var(--bg)',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Background glow */}
+      {/* Background: dot grid pattern */}
       <div
         style={{
           position: 'absolute',
-          top: '20%',
+          inset: 0,
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+          pointerEvents: 'none',
+          maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%)',
+        }}
+      />
+
+      {/* Glow orbs */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '15%',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '300px',
-          height: '300px',
-          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
+          width: '420px',
+          height: '420px',
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.13) 0%, transparent 65%)',
           pointerEvents: 'none',
         }}
       />
       <div
         style={{
           position: 'absolute',
-          bottom: '20%',
-          right: '-50px',
+          bottom: '10%',
+          left: '-80px',
+          width: '280px',
+          height: '280px',
+          background: 'radial-gradient(circle, rgba(38, 194, 163, 0.07) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          top: '30%',
+          right: '-60px',
           width: '200px',
           height: '200px',
-          background: 'radial-gradient(circle, rgba(38, 194, 163, 0.08) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(124, 58, 237, 0.08) 0%, transparent 70%)',
           pointerEvents: 'none',
         }}
       />
 
-      {/* Content */}
+      {/* Hero Section */}
       <div
         style={{
+          flex: 1,
           width: '100%',
-          maxWidth: '380px',
+          maxWidth: '400px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          justifyContent: 'center',
+          padding: '48px 28px 32px',
           gap: '0',
-          animation: 'slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
+          animation: 'slideInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both',
         }}
       >
-        {/* Chess piece icon */}
+        {/* Logo */}
         <div
           style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+            width: '88px',
+            height: '88px',
+            borderRadius: '24px',
+            background: 'var(--gradient-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '40px',
+            fontSize: '44px',
             marginBottom: '28px',
-            boxShadow: '0 0 40px rgba(99, 102, 241, 0.4), 0 8px 32px rgba(0,0,0,0.5)',
+            boxShadow: '0 0 60px rgba(99, 102, 241, 0.45), 0 12px 40px rgba(0,0,0,0.6)',
+            position: 'relative',
           }}
         >
           ♟
+          {/* Outer glow ring */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: '-3px',
+              borderRadius: '27px',
+              background: 'transparent',
+              border: '1.5px solid rgba(99, 102, 241, 0.3)',
+              pointerEvents: 'none',
+            }}
+          />
         </div>
 
         {/* App name */}
         <h1
           style={{
-            fontSize: '2.75rem',
-            fontWeight: 700,
-            letterSpacing: '-0.04em',
-            background: 'linear-gradient(135deg, #F8FAFC 0%, #94A3B8 100%)',
+            fontSize: '3.2rem',
+            fontWeight: 800,
+            letterSpacing: '-0.05em',
+            background: 'linear-gradient(135deg, #F1F5F9 0%, #94A3B8 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
-            marginBottom: '12px',
+            marginBottom: '10px',
             textAlign: 'center',
+            lineHeight: 1,
           }}
         >
           AlphaMove
         </h1>
 
-        {/* Primary tagline */}
+        {/* Tagline */}
         <p
           style={{
             fontSize: '1.125rem',
             color: 'var(--text-primary)',
             fontWeight: 600,
             textAlign: 'center',
-            lineHeight: 1.4,
+            lineHeight: 1.45,
             marginBottom: '8px',
+            letterSpacing: '-0.01em',
           }}
         >
-          Chess.com meets Duolingo
-          <br />
-          for investing
+          The chess engine for your portfolio
         </p>
-
-        {/* Sub tagline */}
         <p
           style={{
-            fontSize: '0.95rem',
+            fontSize: '0.9rem',
             color: 'var(--text-secondary)',
             textAlign: 'center',
             lineHeight: 1.6,
-            marginBottom: '48px',
+            marginBottom: '36px',
+            maxWidth: '28ch',
           }}
         >
-          Your AI mentor rates every trade like a chess engine.
-          Learn by doing — with your real budget.
+          AI mentor. Real market data.
+          Your actual budget.
         </p>
 
-        {/* Feature pills */}
+        {/* Feature cards — 3 horizontal */}
         <div
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '8px',
-            justifyContent: 'center',
-            marginBottom: '48px',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: '10px',
+            width: '100%',
+            marginBottom: '36px',
           }}
         >
           {[
-            { icon: '⚡', text: 'Real-time market data' },
-            { icon: '🧠', text: 'AI mentor on every trade' },
-            { icon: '♟', text: 'Chess-engine feedback' },
-            { icon: '📈', text: 'Level up your judgment' },
-          ].map((feature) => (
+            { icon: '♟', title: 'Every move rated', sub: 'Like a chess engine' },
+            { icon: '🧠', title: 'Socratic mentor', sub: 'Think first' },
+            { icon: '📈', title: 'Level up', sub: 'Real judgment' },
+          ].map((f) => (
             <div
-              key={feature.text}
+              key={f.title}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
-                borderRadius: '999px',
-                fontSize: '0.8rem',
-                color: 'var(--text-secondary)',
-                fontWeight: 500,
+                borderRadius: 'var(--radius-lg)',
+                padding: '14px 10px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '6px',
+                textAlign: 'center',
               }}
             >
-              <span>{feature.icon}</span>
-              <span>{feature.text}</span>
+              <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{f.icon}</span>
+              <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3, margin: 0 }}>
+                {f.title}
+              </p>
+              <p style={{ fontSize: '0.62rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.3 }}>
+                {f.sub}
+              </p>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* Sign in button */}
+      {/* CTA Section — pinned at bottom */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '400px',
+          padding: '0 28px calc(32px + env(safe-area-inset-bottom))',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          animation: 'slideInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both',
+        }}
+      >
+        {/* Google sign-in — primary CTA */}
         <button
           onClick={onSignIn}
           disabled={loading}
           className="btn btn-primary btn-full btn-lg"
-          style={{
-            fontSize: '1.05rem',
-            letterSpacing: '-0.01em',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
+          style={{ position: 'relative', overflow: 'hidden' }}
         >
           {loading ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -197,9 +247,10 @@ export default function WelcomeScreen({ onSignIn, onGuestSignIn, loading }: Welc
                   borderRadius: '50%',
                   animation: 'spin 0.8s linear infinite',
                   display: 'inline-block',
+                  flexShrink: 0,
                 }}
               />
-              Signing in...
+              Signing in…
             </span>
           ) : (
             <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -214,56 +265,34 @@ export default function WelcomeScreen({ onSignIn, onGuestSignIn, loading }: Welc
           )}
         </button>
 
-        {/* Guest sign-in */}
+        {/* Guest option — secondary */}
         <button
           onClick={handleGuestSignIn}
           disabled={loading || guestLoading}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: guestLoading ? 'var(--accent)' : 'var(--text-muted)',
-            fontSize: '0.88rem',
-            cursor: guestLoading ? 'default' : 'pointer',
-            marginTop: '16px',
-            padding: '12px 16px',
-            textDecoration: guestLoading ? 'none' : 'underline',
-            textDecorationColor: 'rgba(148,163,184,0.35)',
-            textUnderlineOffset: '3px',
-            WebkitTapHighlightColor: 'transparent',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            minHeight: '44px',
-          }}
+          className="btn btn-ghost btn-full"
+          style={{ fontSize: '0.9rem', color: guestLoading ? 'var(--accent)' : 'var(--text-secondary)' }}
         >
           {guestLoading ? (
-            <>
-              <span style={{ width: '14px', height: '14px', border: '2px solid rgba(99,102,241,0.3)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block', flexShrink: 0 }} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '14px', height: '14px', border: '2px solid rgba(99,102,241,0.3)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
               Starting guest session…
-            </>
-          ) : (
-            'Continue as Guest →'
-          )}
+            </span>
+          ) : 'Continue as Guest'}
         </button>
 
         {guestError && (
-          <p style={{ color: 'var(--danger)', fontSize: '0.78rem', textAlign: 'center', marginTop: '4px' }}>
-            ⚠ {guestError}
-          </p>
+          <p style={{ color: 'var(--danger)', fontSize: '0.78rem', textAlign: 'center' }}>⚠ {guestError}</p>
         )}
 
-        {/* Disclaimer */}
         <p
           style={{
-            fontSize: '0.72rem',
+            fontSize: '0.68rem',
             color: 'var(--text-muted)',
             textAlign: 'center',
-            marginTop: '14px',
-            lineHeight: 1.5,
+            lineHeight: 1.6,
           }}
         >
-          Paper trading only · No real money · Educational use
-          <br />
+          Paper trading only · No real money · Educational use<br />
           Guest progress is saved to this device.
         </p>
       </div>

@@ -100,8 +100,9 @@ export default function MorningBrief({ brief, loading, dailyQuestion }: MorningB
       {/* Portfolio summary card */}
       <div
         style={{
-          background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-elevated) 100%)',
+          background: 'var(--gradient-surface)',
           border: '1px solid var(--border)',
+          borderTop: '2px solid rgba(99, 102, 241, 0.5)',
           borderRadius: 'var(--radius-xl)',
           padding: '20px',
           position: 'relative',
@@ -221,10 +222,11 @@ export default function MorningBrief({ brief, loading, dailyQuestion }: MorningB
       {dailyQuestion && (
         <div
           style={{
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)',
-            border: '1px solid rgba(99, 102, 241, 0.3)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '16px',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(124, 58, 237, 0.08) 100%)',
+            border: '1px solid rgba(99, 102, 241, 0.28)',
+            borderTop: '2px solid rgba(99, 102, 241, 0.5)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '20px',
             display: 'flex',
             gap: '12px',
             alignItems: 'flex-start',
