@@ -22,6 +22,10 @@ import MarketMovers from '../components/trade/MarketMovers';
 import SectorHeatmap from '../components/trade/SectorHeatmap';
 import WatchlistPanel from '../components/trade/WatchlistPanel';
 import OptionsChain from '../components/trade/OptionsChain';
+import GlobalMarkets from '../components/trade/GlobalMarkets';
+import CryptoPanel from '../components/trade/CryptoPanel';
+import FixedIncomePanel from '../components/trade/FixedIncomePanel';
+import PoliticalTrades from '../components/trade/PoliticalTrades';
 import { getCryptoQuote, getCryptoName } from '../services/cryptoService';
 import type { TradeAction, MentorMessage, MentorConversation, MoveRating, AssetClass, OptionContract } from '../types';
 import type { OrderType, TimeInForce } from '../components/trade/TradeForm';
@@ -93,6 +97,9 @@ export default function TradePage() {
   // Asset class
   const [assetClass, setAssetClass] = useState<AssetClass>('stock');
   const [optionContract, setOptionContract] = useState<OptionContract | null>(null);
+
+  // Market tab for search screen
+  const [marketTab, setMarketTab] = useState<'discover' | 'markets' | 'political'>('discover');
 
   // Order type
   const [orderType, setOrderType] = useState<OrderType>('market');
@@ -650,18 +657,55 @@ export default function TradePage() {
 
       {/* Search step */}
       {step === 'search' && !quoteLoading && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', animation: 'slideInUp 0.4s ease both' }}>
-          {/* Market overview — quick-tap any ticker to load it */}
-          <MarketOverview onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', animation: 'slideInUp 0.4s ease both' }}>
 
-          {/* Watchlist */}
-          <WatchlistPanel onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+          {/* Tab selector */}
+          <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '3px', gap: '2px' }}>
+            {([
+              { id: 'discover', label: '🔍 Discover' },
+              { id: 'markets', label: '🌐 Markets' },
+              { id: 'political', label: '🏛 Political' },
+            ] as const).map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setMarketTab(id)}
+                style={{
+                  flex: 1, padding: '7px 4px', borderRadius: '9px', border: 'none',
+                  background: marketTab === id ? 'var(--surface-elevated)' : 'transparent',
+                  color: marketTab === id ? 'var(--text-primary)' : 'var(--text-muted)',
+                  fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer',
+                  boxShadow: marketTab === id ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
+                  transition: 'all 0.15s',
+                }}
+              >{label}</button>
+            ))}
+          </div>
 
-          {/* Market movers */}
-          <MarketMovers onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+          {/* DISCOVER tab */}
+          {marketTab === 'discover' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <MarketOverview onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+              <WatchlistPanel onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+              <MarketMovers onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+              <SectorHeatmap onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+            </div>
+          )}
 
-          {/* Sector heatmap */}
-          <SectorHeatmap onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+          {/* MARKETS tab */}
+          {marketTab === 'markets' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <GlobalMarkets onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+              <CryptoPanel onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+              <FixedIncomePanel onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+            </div>
+          )}
+
+          {/* POLITICAL tab */}
+          {marketTab === 'political' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <PoliticalTrades onSelect={(sym, name) => handleTickerSelect(sym, name)} />
+            </div>
+          )}
 
           {/* Asset class selector */}
           <AssetClassSelector

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PriceAlertButton from './PriceAlertButton';
 import { getStockCandles } from '../../services/marketService';
 import { getCryptoCandles } from '../../services/cryptoService';
 import { getCompanyNews, getStockMetrics } from '../../services/marketService';
@@ -351,6 +352,18 @@ export default function StockDetail({
         {assetClass === 'stock' && uid && (
           <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)' }}>
             <AddToWatchlistButton ticker={ticker} uid={uid} />
+          </div>
+        )}
+
+        {/* Price Alert */}
+        {uid && quote && (
+          <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)' }}>
+            <PriceAlertButton
+              ticker={ticker}
+              companyName={companyName}
+              currentPrice={quote.price}
+              uid={uid}
+            />
           </div>
         )}
 
