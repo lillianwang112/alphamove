@@ -218,6 +218,32 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
     }
   }
 
+  // Fallback: Finnhub daily candles (free tier)
+  try {
+    const fromUnix = Math.floor(fromDate.getTime() / 1000);
+    const toUnix = Math.floor(toDate.getTime() / 1000);
+    const data = await finnhubFetch<{
+      c?: number[];
+      h?: number[];
+      l?: number[];
+      t?: number[];
+      s: string;
+    }>(`/stock/candle?symbol=${encodeURIComponent(ticker)}&resolution=D&from=${fromUnix}&to=${toUnix}`);
+
+    if (data.s === 'ok' && data.c && data.c.length >= 5) {
+      const result: CandleResult = {
+        closes: data.c,
+        timestamps: data.t ?? [],
+        highs: data.h ?? [],
+        lows: data.l ?? [],
+      };
+      _candleCache.set(cacheKey, { result, exp: Date.now() + CACHE_TTL });
+      return result;
+    }
+  } catch {
+    // fall through
+  }
+
   return { closes: [], timestamps: [], highs: [], lows: [] };
 }
 

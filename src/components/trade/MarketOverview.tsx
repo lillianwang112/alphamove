@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getQuote } from '../../services/marketService';
+import { getQuote, getStockCandles } from '../../services/marketService';
 
 interface TickerQuote {
   ticker: string;
@@ -9,6 +9,7 @@ interface TickerQuote {
   prevClose: number;
   high: number;
   low: number;
+  closes: number[];
 }
 
 const WATCH_LIST = [
@@ -24,22 +25,26 @@ const WATCH_LIST = [
   { ticker: 'GOOGL',label: 'Alphabet' },
 ];
 
-function MiniSparkline({ prevClose, high, low, price, positive }: {
-  prevClose: number; high: number; low: number; price: number; positive: boolean;
+function MiniSparkline({ closes, prevClose, high, low, price, positive }: {
+  closes: number[]; prevClose: number; high: number; low: number; price: number; positive: boolean;
 }) {
   const color = positive ? '#22C55E' : '#EF4444';
-  // Synthetic 8-point line from prevClose → current with intraday shape
-  const pts: number[] = [];
-  const range = high - low || price * 0.01;
-  for (let i = 0; i < 8; i++) {
-    const t = i / 7;
-    const base = prevClose + (price - prevClose) * t;
-    const wave = range * 0.25 * Math.sin(i * 1.8 + (positive ? 0.5 : 2.5));
-    pts.push(Math.max(low * 0.999, Math.min(high * 1.001, base + wave)));
-  }
+  // Use real closes if available (>= 2 points), otherwise synthetic fallback
+  const pts: number[] = closes.length >= 2
+    ? closes
+    : (() => {
+        const range = high - low || price * 0.01;
+        return Array.from({ length: 8 }, (_, i) => {
+          const t = i / 7;
+          const base = prevClose + (price - prevClose) * t;
+          const wave = range * 0.25 * Math.sin(i * 1.8 + (positive ? 0.5 : 2.5));
+          return Math.max(low * 0.999, Math.min(high * 1.001, base + wave));
+        });
+      })();
+
   const W = 60, H = 28, pad = 2;
   const mn = Math.min(...pts), mx = Math.max(...pts), dr = mx - mn || 1;
-  const toX = (i: number) => (i / 7) * W;
+  const toX = (i: number) => (i / (pts.length - 1)) * W;
   const toY = (v: number) => H - pad - ((v - mn) / dr) * (H - pad * 2);
   const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${toX(i).toFixed(1)},${toY(p).toFixed(1)}`).join(' ');
   const area = `${d} L ${W},${H} L 0,${H} Z`;
@@ -64,14 +69,20 @@ export default function MarketOverview({ onSelect }: { onSelect?: (ticker: strin
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      // Fetch quotes and 14-day candles in parallel for each ticker
       const results = await Promise.allSettled(
-        WATCH_LIST.map(({ ticker }) => getQuote(ticker).then(q => ({ ticker, q })))
+        WATCH_LIST.map(({ ticker }) =>
+          Promise.all([
+            getQuote(ticker),
+            getStockCandles(ticker, 14).catch(() => ({ closes: [], timestamps: [], highs: [], lows: [] })),
+          ]).then(([q, candles]) => ({ ticker, q, candles }))
+        )
       );
       if (cancelled) return;
       const loaded: TickerQuote[] = [];
       results.forEach((r, i) => {
         if (r.status === 'fulfilled') {
-          const { ticker, q } = r.value;
+          const { ticker, q, candles } = r.value;
           loaded.push({
             ticker,
             label: WATCH_LIST[i].label,
@@ -80,6 +91,7 @@ export default function MarketOverview({ onSelect }: { onSelect?: (ticker: strin
             prevClose: q.prevClose,
             high: q.high,
             low: q.low,
+            closes: candles.closes,
           });
         }
       });
@@ -136,7 +148,7 @@ export default function MarketOverview({ onSelect }: { onSelect?: (ticker: strin
                   <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent)', margin: 0 }}>{q.ticker}</p>
                   <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: 0, whiteSpace: 'nowrap' }}>{q.label}</p>
                 </div>
-                <MiniSparkline prevClose={q.prevClose} high={q.high} low={q.low} price={q.price} positive={pos} />
+                <MiniSparkline closes={q.closes} prevClose={q.prevClose} high={q.high} low={q.low} price={q.price} positive={pos} />
               </div>
               <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                 ${q.price < 10 ? q.price.toFixed(3) : q.price.toFixed(2)}
