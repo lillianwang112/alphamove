@@ -61,29 +61,32 @@ function tickerSeed(ticker: string): number {
   return Math.abs(h);
 }
 
-function generateSyntheticPrices(quote: QuoteData, count: number, ticker: string): number[] {
-  const n = Math.min(count, 252);
-  const seed = tickerSeed(ticker);
-  // Each ticker gets unique frequency offsets so charts look distinct
+function generateSyntheticPrices(quote: QuoteData, days: number, ticker: string): number[] {
+  // Use enough points to distinguish ranges visually, but cap for perf
+  const n = Math.min(Math.max(days, 20), 252);
+  const seed = tickerSeed(ticker) ^ (days * 2654435761);
+  // Each ticker+range combo gets unique frequency offsets so charts look distinct
   const f1 = 1.8 + (seed % 100) / 100;
   const f2 = 0.9 + ((seed >> 4) % 80) / 100;
   const f3 = 0.5 + ((seed >> 8) % 60) / 100;
   const phase1 = (seed % 628) / 100;
   const phase2 = ((seed >> 6) % 628) / 100;
   // Seeded pseudo-random for per-day jitter
-  let rng = seed;
+  let rng = seed >>> 0;
   const rand = () => { rng = (Math.imul(1664525, rng) + 1013904223) >>> 0; return (rng / 0xFFFFFFFF) - 0.5; };
 
   const start = quote.prevClose;
   const end = quote.price;
-  const amplitude = (quote.high - quote.low) * 0.5;
+  // Longer ranges get more amplitude relative to the day's range
+  const rangeScale = Math.log2(Math.max(days, 2)) / 4;
+  const amplitude = (quote.high - quote.low) * 0.5 * (1 + rangeScale);
   const prices: number[] = [];
   for (let i = 0; i < n; i++) {
     const t = i / Math.max(n - 1, 1);
     const trend = start + (end - start) * t;
     const wave = amplitude * (Math.sin(i * f1 + phase1) * 0.4 + Math.sin(i * f2 + phase2) * 0.35 + Math.sin(i * f3) * 0.25);
     const jitter = amplitude * rand() * 0.15;
-    prices.push(Math.max(quote.low * 0.95, Math.min(quote.high * 1.05, trend + wave + jitter)));
+    prices.push(Math.max(quote.low * 0.9, Math.min(quote.high * 1.1, trend + wave + jitter)));
   }
   return prices;
 }
@@ -132,12 +135,12 @@ export default function StockDetail({
         setTimestamps(data.timestamps ?? []);
         setChartSimulated(false);
       } else {
-        setPrices(generateSyntheticPrices(quote, Math.max(7, Math.floor(days * 0.7)), ticker));
+        setPrices(generateSyntheticPrices(quote, days, ticker));
         setTimestamps([]);
         setChartSimulated(true);
       }
     }).catch(() => {
-      setPrices(generateSyntheticPrices(quote, Math.max(7, Math.floor(days * 0.7)), ticker));
+      setPrices(generateSyntheticPrices(quote, days, ticker));
       setTimestamps([]);
       setChartSimulated(true);
     }).finally(() => setChartLoading(false));

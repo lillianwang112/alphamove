@@ -22,15 +22,25 @@ declare global {
 
 // ─── AI Helper ────────────────────────────────────
 
+async function waitForPuter(timeoutMs = 8000): Promise<void> {
+  const w = window as unknown as { puter?: { ai?: { chat?: unknown } } };
+  if (w.puter?.ai?.chat) return;
+  const start = Date.now();
+  await new Promise<void>((resolve, reject) => {
+    const check = () => {
+      if (w.puter?.ai?.chat) { resolve(); return; }
+      if (Date.now() - start > timeoutMs) { reject(new Error('Puter AI SDK timed out')); return; }
+      setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
 async function callAI(messages: Array<{ role: string; content: string }>): Promise<string> {
   try {
-    if (!window.puter?.ai?.chat) {
-      throw new Error(
-        'Puter AI SDK is not available. Load https://js.puter.com/v2/ before using mentor features.'
-      );
-    }
+    await waitForPuter();
 
-    const response = await window.puter.ai.chat(messages, { model: 'claude-opus-4-5' });
+    const response = await window.puter.ai.chat(messages, { model: 'claude-opus-4-6' });
     const content = response?.message?.content;
     if (!content) throw new Error('Empty AI response');
 

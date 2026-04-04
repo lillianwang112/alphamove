@@ -1,7 +1,7 @@
 import { FINNHUB_API_KEY, FINNHUB_BASE_URL } from '../config/finnhub';
 
 const FMP_API_KEY = import.meta.env.VITE_FMP_API_KEY || '';
-const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const FMP_BASE_URL = 'https://financialmodelingprep.com/stable';
 import { Timestamp } from 'firebase/firestore';
 import type { NewsEvent } from '../types';
 
@@ -190,19 +190,18 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
   const fromDate = new Date();
   fromDate.setDate(fromDate.getDate() - days);
 
-  // Primary: Financial Modeling Prep (free tier includes historical OHLCV)
+  // Primary: Financial Modeling Prep stable API
   if (FMP_API_KEY) {
     try {
-      const url = `${FMP_BASE_URL}/historical-price-full/${encodeURIComponent(ticker)}?from=${formatDate(fromDate)}&to=${formatDate(toDate)}&apikey=${FMP_API_KEY}`;
+      const url = `${FMP_BASE_URL}/historical-price-eod/full?symbol=${encodeURIComponent(ticker)}&from=${formatDate(fromDate)}&to=${formatDate(toDate)}&apikey=${FMP_API_KEY}`;
       const res = await fetch(url);
       if (res.ok) {
-        const data = await res.json() as {
-          symbol: string;
-          historical: Array<{ date: string; open: number; high: number; low: number; close: number }>;
-        };
-        if (data.historical && data.historical.length >= 5) {
+        const data = await res.json() as Array<{
+          date: string; open: number; high: number; low: number; close: number;
+        }>;
+        if (Array.isArray(data) && data.length >= 5) {
           // FMP returns newest-first — reverse to chronological
-          const rows = [...data.historical].reverse();
+          const rows = [...data].reverse();
           const result: CandleResult = {
             closes: rows.map((r) => r.close),
             timestamps: rows.map((r) => Math.floor(new Date(r.date).getTime() / 1000)),
@@ -214,7 +213,7 @@ export async function getStockCandles(ticker: string, days = 30): Promise<Candle
         }
       }
     } catch {
-      // fall through to empty
+      // fall through
     }
   }
 
