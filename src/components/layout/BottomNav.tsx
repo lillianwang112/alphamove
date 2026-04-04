@@ -43,9 +43,19 @@ function ProfileIcon({ active }: { active: boolean }) {
   );
 }
 
-const ICONS = [HomeIcon, TradeIcon, MentorIcon, ProfileIcon];
-const PATHS = ['/', '/trade', '/mentor', '/profile'];
-const LABELS = ['Home', 'Trade', 'Mentor', 'Profile'];
+function FeedIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M17 20H7a2 2 0 01-2-2V6a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z"
+        stroke="currentColor" strokeWidth={active ? 2.2 : 1.7} strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 12h6M9 16h4" stroke="currentColor" strokeWidth={active ? 2.2 : 1.7} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const ICONS = [HomeIcon, TradeIcon, FeedIcon, MentorIcon, ProfileIcon];
+const PATHS = ['/', '/trade', '/feed', '/mentor', '/profile'];
+const LABELS = ['Home', 'Trade', 'Feed', 'Mentor', 'Profile'];
 
 export default function BottomNav() {
   const navigate = useNavigate();

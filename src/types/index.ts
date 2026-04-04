@@ -186,3 +186,28 @@ export interface OptionContract {
 
 // ─── Trade Mode ───────────────────────────────────
 export type TradeMode = 'learning' | 'simulation';
+
+// ─── Social Feed ──────────────────────────────────
+
+export type ReactionType = 'agree' | 'interesting' | 'learned';
+
+export interface ThesisReactions {
+  [uid: string]: ReactionType;
+}
+
+export interface PublicThesis {
+  id: string;
+  uid: string;
+  displayName: string;
+  ticker: string;
+  companyName: string;
+  action: TradeAction;
+  thesis: string;
+  moveRating: MoveRating | null;   // null until post-trade analysis runs
+  xpEarned: number;
+  reactions: ThesisReactions;
+  reactionCounts: { agree: number; interesting: number; learned: number };
+  createdAt: Timestamp;
+  isAIGenerated: boolean;
+  tradeId?: string;
+}

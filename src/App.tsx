@@ -16,6 +16,7 @@ import PortfolioPage from './pages/PortfolioPage';
 import TradePage from './pages/TradePage';
 import MentorPage from './pages/MentorPage';
 import ProfilePage from './pages/ProfilePage';
+import FeedPage from './pages/FeedPage';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -232,6 +233,7 @@ function AuthGate() {
             <Route path="/" element={<HomePage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
             <Route path="/trade" element={<TradePage />} />
+            <Route path="/feed" element={<FeedPage />} />
             <Route path="/mentor" element={<MentorPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

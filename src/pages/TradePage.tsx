@@ -27,6 +27,7 @@ import ThesisScore from '../components/trade/ThesisScore';
 import ScenarioReplay from '../components/mentor/ScenarioReplay';
 import { scoreThesis, generateScenarioReplay } from '../services/mentorService';
 import type { ThesisScoreResult, ScenarioReplayResult } from '../services/mentorService';
+import { publishThesis, updateThesisMoveRating } from '../services/feedService';
 
 type TradeStep =
   | 'search'
@@ -411,6 +412,22 @@ export default function TradePage() {
         mentorPreTradeAnalysis: mentorSummary,
       });
 
+      // Publish to social feed (best effort — don't block trade on failure)
+      let feedThesisId = '';
+      try {
+        feedThesisId = await publishThesis({
+          uid: user.uid,
+          displayName: user.displayName || 'Trader',
+          ticker,
+          companyName: companyName || profile?.name || ticker,
+          action,
+          thesis: userThesis,
+          moveRating: null, // will be updated after post-trade analysis
+          xpEarned: 0,
+          tradeId: trade.id,
+        });
+      } catch { /* non-blocking */ }
+
       // In simulation mode, skip post-trade analysis
       if (tradeMode === 'simulation') {
         setPostTradeResult({
@@ -448,6 +465,11 @@ export default function TradePage() {
         xpReason: `${analysis.moveRating} move on ${ticker}`,
         betterMove: null,
       });
+
+      // Update thesis move rating in feed
+      if (feedThesisId) {
+        updateThesisMoveRating(feedThesisId, analysis.moveRating, analysis.xpEarned).catch(() => {});
+      }
 
       // Award XP
       const xpResult = await awardXP({
