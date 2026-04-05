@@ -126,12 +126,13 @@ Trade across four asset classes in a single portfolio:
 ## 🔧 How It Works
 
 ### Architecture Overview
+```text
 User → Trade Page → [Alpha pre-trade chat] → Trade Confirmation → Firebase
 ↓
 Move Rating (AI) + XP
 ↓
 Post-Trade Card (feedback)
-
+```
 
 ### Tech Stack
 
@@ -173,6 +174,7 @@ Requires a Finnhub API key (free tier works) and a Firebase project. See `.env.e
 
 ## 📁 Project Structure
 
+```text
 src/
 ├── components/
 │   ├── brief/           # Morning Brief card
@@ -192,6 +194,7 @@ src/
 ├── pages/               # HomePage, TradePage, MentorPage, PortfolioPage, ProfilePage
 ├── services/            # mentorService, tradeService, portfolioService, xpService, newsService
 └── types/               # Full TypeScript interfaces for User, Trade, Portfolio, XP, etc.
+```
 
 ---
 
